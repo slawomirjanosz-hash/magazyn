@@ -1,8 +1,9 @@
 
 FROM php:8.2-cli
 
-# Wymuszenie rebuildu warstwy Node.js
-ENV NODE_VERSION_DEBUG=1
+# Wymuszenie rebuildu warstwy Node.js - force rebuild 2025-01-04
+ENV NODE_VERSION_DEBUG=2
+ENV FORCE_REBUILD=2025-01-04-15-30
 
 WORKDIR /app
 
