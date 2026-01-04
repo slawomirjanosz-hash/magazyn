@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
             User::create([
                 'name' => 'Test User',
                 'email' => 'test@example.com',
-                'password' => null,
+                'password' => \Illuminate\Support\Facades\Hash::make('test'),
                 'is_admin' => false,
                 'can_view_catalog' => true,
                 'can_add' => false,
