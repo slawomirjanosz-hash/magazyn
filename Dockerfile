@@ -19,7 +19,7 @@ RUN apt-get update \
     && echo "Node version: $(node -v)" \
     && echo "NPM version: $(npm -v)" \
     && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install gd zip \
+    && docker-php-ext-install gd zip pdo_mysql \
     # --- force rebuild ---
     && mkdir -p bootstrap/cache storage/framework/views storage/framework/sessions storage/framework/cache storage/logs \
     && chmod -R 777 bootstrap/cache storage \
