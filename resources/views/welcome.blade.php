@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Magazyn 3C Automation</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
 
@@ -12,9 +12,14 @@
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-4">
             @php
-                $companySettings = \App\Models\CompanySetting::first();
-                $logoPath = $companySettings && $companySettings->logo ? asset('storage/' . $companySettings->logo) : '/logo.png';
-                $companyName = $companySettings && $companySettings->name ? $companySettings->name : '3C Automation';
+                try {
+                    $companySettings = \App\Models\CompanySetting::first();
+                    $logoPath = $companySettings && $companySettings->logo ? asset('storage/' . $companySettings->logo) : '/logo.png';
+                    $companyName = $companySettings && $companySettings->name ? $companySettings->name : '3C Automation';
+                } catch (\Exception $e) {
+                    $logoPath = '/logo.png';
+                    $companyName = '3C Automation';
+                }
             @endphp
             <!-- LOGO -->
             <img src="{{ $logoPath }}" alt="{{ $companyName }}" class="h-10">
@@ -43,9 +48,9 @@
         System zarządzania częściami magazynowymi
     </p>
 
-    <a href="{{ route('magazyn.check') }}"
-       class="inline-block px-6 py-3 bg-green-600 text-white rounded text-lg">
-        Wejdź do magazynu
+    <a href="{{ route('login') }}"
+       class="inline-block px-6 py-3 bg-green-600 text-white rounded text-lg hover:bg-green-700">
+        Zaloguj się
     </a>
 </main>
 
