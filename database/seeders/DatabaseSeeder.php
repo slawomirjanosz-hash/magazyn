@@ -32,6 +32,21 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
+        // Tworzenie konta admin (login: admin, email: admin@admin.com, hasło: admin)
+        if (!User::where('email', 'admin@admin.com')->exists()) {
+            User::create([
+                'name' => 'Admin',
+                'email' => 'admin@admin.com',
+                'password' => \Illuminate\Support\Facades\Hash::make('admin'),
+                'is_admin' => true,
+                'can_view_catalog' => true,
+                'can_add' => true,
+                'can_remove' => true,
+                'can_orders' => true,
+                'can_settings' => true,
+            ]);
+        }
+
         // Test User (jeśli nie istnieje)
         if (!User::where('email', 'test@example.com')->exists()) {
             User::create([
