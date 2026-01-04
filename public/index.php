@@ -62,6 +62,36 @@ require __DIR__.'/../vendor/autoload.php';
 
 // Bootstrap Laravel and handle the request...
 /** @var Application $app */
-$app = require_once __DIR__.'/../bootstrap/app.php';
-
-$app->handleRequest(Request::capture());
+try {
+    echo "<!-- BOOTSTRAP START -->\n";
+    $app = require_once __DIR__.'/../bootstrap/app.php';
+    echo "<!-- BOOTSTRAP SUCCESS -->\n";
+    
+    echo "<!-- HANDLING REQUEST -->\n";
+    $response = $app->handleRequest(Request::capture());
+    echo "<!-- REQUEST HANDLED -->\n";
+    
+    // Send response
+    $response->send();
+    echo "<!-- RESPONSE SENT -->\n";
+} catch (\Throwable $e) {
+    // This catches EVERYTHING
+    http_response_code(500);
+    echo "<html><head><title>Bootstrap Error</title></head><body>";
+    echo "<pre style='background:#e91e63;color:#fff;padding:30px;font-family:monospace;font-size:14px;'>";
+    echo "🚨 LARAVEL BOOTSTRAP/HANDLE ERROR 🚨\n";
+    echo "=====================================\n\n";
+    echo "Exception: " . get_class($e) . "\n";
+    echo "Message: " . $e->getMessage() . "\n";
+    echo "File: " . $e->getFile() . "\n";
+    echo "Line: " . $e->getLine() . "\n\n";
+    echo "Stack Trace:\n";
+    echo $e->getTraceAsString();
+    echo "\n\n";
+    echo "Environment Variables:\n";
+    echo "APP_ENV: " . (getenv('APP_ENV') ?: 'NOT SET') . "\n";
+    echo "APP_DEBUG: " . (getenv('APP_DEBUG') ?: 'NOT SET') . "\n";
+    echo "DB_CONNECTION: " . (getenv('DB_CONNECTION') ?: 'NOT SET') . "\n";
+    echo "</pre></body></html>";
+    exit(1);
+}
