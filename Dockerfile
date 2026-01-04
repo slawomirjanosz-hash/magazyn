@@ -5,7 +5,7 @@ WORKDIR /app
 COPY . /app
 
 RUN apt-get update \
-    && apt-get install -y git unzip libpng-dev libonig-dev libxml2-dev libjpeg-dev libzip-dev curl \
+    && apt-get install -y git unzip libpng-dev libonig-dev libxml2-dev libjpeg-dev libzip-dev zip curl \
     && docker-php-ext-configure gd --with-jpeg \
     && docker-php-ext-install gd zip \
     && mkdir -p bootstrap/cache \
