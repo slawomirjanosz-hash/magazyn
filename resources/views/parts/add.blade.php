@@ -139,7 +139,9 @@
                     <table id="selected-products-table-inner" class="w-full border border-collapse text-xs mb-4">
                         <thead class="bg-green-100">
                             <tr>
-                                <th class="border p-1 text-center" style="width: 30px;"></th>
+                                <th class="border p-1 text-center" style="width: 30px;">
+                                    <input type="checkbox" id="select-all-add-products" class="w-4 h-4 cursor-pointer" title="Zaznacz wszystkie">
+                                </th>
                                 <th class="border p-1 text-left" style="white-space: nowrap;">Produkt</th>
                                 <th class="border p-1 text-left" style="width: 60px;">Dost.</th>
                                 <th class="border p-1 text-center" style="width: 100px;">Cena netto</th>
@@ -186,6 +188,7 @@
                                        data-part-name="{{ $p->name }}" 
                                        data-part-desc="{{ $p->description ?? '' }}" 
                                        data-part-supplier="{{ $p->supplier ?? '' }}" 
+                                       data-part-supplier-short="{{ $supplierShort }}" 
                                        data-part-qty="{{ $p->quantity }}" 
                                        data-part-cat="{{ $p->category_id }}"
                                        data-part-cat-name="{{ $p->category->name ?? '' }}"
@@ -237,6 +240,7 @@
                         <tr>
                             <th class="border p-2 text-left">Produkt</th>
                             <th class="border p-2 text-left">Opis</th>
+                            <th class="border p-2 text-left" style="width: 80px;">Dostawca</th>
                             <th class="border p-2 text-center">Dodano</th>
                             <th class="border p-2 text-center">Stan po</th>
                             <th class="border p-2 text-left">Data</th>
@@ -247,6 +251,7 @@
                             <tr>
                                 <td class="border p-2">{{ $r['name'] ?? '-' }}</td>
                                 <td class="border p-2">{{ $r['description'] ?? '-' }}</td>
+                                <td class="border p-2 text-xs text-gray-700">{{ $r['supplier'] ?? '-' }}</td>
                                 <td class="border p-2 text-center text-green-600 font-bold">
                                     +{{ $r['changed'] ?? 0 }}
                                 </td>
@@ -302,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedProductsTable = document.getElementById('selected-products-table-inner').querySelector('tbody');
     const removeAllBtnInner = document.getElementById('remove-all-selected-btn-inner');
     const addAllBtn = document.getElementById('add-all-btn-inner');
+    const selectAllAddCheckbox = document.getElementById('select-all-add-products');
     let selectedProducts = {};
 
     function updateSelectedProductsDisplay() {
@@ -573,6 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const productName = checkbox.dataset.partName;
             const productDesc = checkbox.dataset.partDesc;
             const productSupplier = checkbox.dataset.partSupplier;
+            const productSupplierShort = checkbox.dataset.partSupplierShort || '';
             const productQty = parseInt(checkbox.dataset.partQty) || 0;
             const productCat = parseInt(checkbox.dataset.partCat) || 0;
             const productCatName = checkbox.dataset.partCatName || '';
@@ -583,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedProducts[productName] = {
                     description: productDesc,
                     supplier: productSupplier,
+                    supplierShort: productSupplierShort,
                     quantity: 1,
                     stockQuantity: productQty,
                     categoryId: productCat,
@@ -597,6 +605,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelectedProductsDisplay();
         });
     });
+
+    // Globalny checkbox "Zaznacz wszystkie" w tabeli produktów do dodania
+    if (selectAllAddCheckbox) {
+        selectAllAddCheckbox.addEventListener('change', function() {
+            const checkboxes = selectedProductsTable.querySelectorAll('.selected-product-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    }
 
     removeAllBtnInner.addEventListener('click', () => {
         selectedProducts = {};

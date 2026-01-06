@@ -342,6 +342,8 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                                                     data-order-products='@json($order->products)'>
                                                 <span role="img" aria-label="Edytuj" class="pointer-events-none">✏️</span>
                                             </button>
+                                            @endif
+                                            @if($order->status !== 'received' || auth()->user()->is_admin)
                                             <button class="bg-red-100 hover:bg-red-200 text-gray-800 px-2 py-1 rounded text-xs inline-flex items-center justify-center delete-order-btn" 
                                                     title="Usuń zamówienie"
                                                     data-order-id="{{ $order->id }}"
@@ -1218,11 +1220,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const receiveBtn = document.getElementById('receive-order-btn');
                 const editBtn = document.getElementById('preview-edit-order-btn');
                 const deleteBtn = document.getElementById('preview-delete-order-btn');
+                const isAdmin = {{ auth()->user()->is_admin ? 'true' : 'false' }};
                 
                 if (status === 'received') {
                     receiveBtn.style.display = 'none';
                     editBtn.style.display = 'none';
-                    deleteBtn.style.display = 'none';
+                    // Admin może usuwać przyjęte zamówienia
+                    deleteBtn.style.display = isAdmin ? 'block' : 'none';
                 } else {
                     receiveBtn.style.display = 'block';
                     editBtn.style.display = 'block';

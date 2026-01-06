@@ -479,7 +479,7 @@ class PartController extends Controller
             ]
         );
 
-        // aktualizacja opisu, dostawcy, ceny i waluty (jeśli zmieniony / wpisany)
+        // aktualizacja opisu, dostawcy, ceny, waluty i kategorii (jeśli zmieniony / wpisany)
         if (array_key_exists('description', $data)) {
             $part->description = $data['description'];
         }
@@ -492,6 +492,9 @@ class PartController extends Controller
         if (array_key_exists('currency', $data)) {
             $part->currency = $data['currency'];
         }
+        if (array_key_exists('category_id', $data)) {
+            $part->category_id = $data['category_id'];
+        }
 
         // zwiększenie stanu
         $part->quantity += (int) $data['quantity'];
@@ -501,11 +504,19 @@ class PartController extends Controller
         
         $part->save();
 
+        // Pobierz skróconą nazwę dostawcy dla historii
+        $supplierDisplay = '';
+        if ($part->supplier) {
+            $supplier = \App\Models\Supplier::where('name', $part->supplier)->first();
+            $supplierDisplay = $supplier && $supplier->short_name ? $supplier->short_name : $part->supplier;
+        }
+        
         // historia sesji (DODAJ)
         session()->push('adds', [
             'date'        => now()->format('Y-m-d H:i'),
             'name'        => $part->name,
             'description' => $part->description,
+            'supplier'    => $supplierDisplay,
             'changed'     => (int) $data['quantity'],
             'after'       => $part->quantity,
             'category'    => $part->category->name ?? '-',
@@ -583,11 +594,19 @@ class PartController extends Controller
             'stock_after' => $part->quantity,
         ]);
 
+        // Pobierz skróconą nazwę dostawcy dla historii
+        $supplierDisplay = '';
+        if ($part->supplier) {
+            $supplier = \App\Models\Supplier::where('name', $part->supplier)->first();
+            $supplierDisplay = $supplier && $supplier->short_name ? $supplier->short_name : $part->supplier;
+        }
+        
         // historia sesji (POBIERZ) — 🔧 DODANY OPIS
         session()->push('removes', [
             'date'        => now()->format('Y-m-d H:i'),
             'name'        => $part->name,
             'description' => $part->description,
+            'supplier'    => $supplierDisplay,
             'changed'     => $removed,
             'after'       => $part->quantity,
         ]);

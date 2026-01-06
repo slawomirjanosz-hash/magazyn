@@ -93,7 +93,9 @@
                     <table id="selected-products-table-inner" class="w-full border border-collapse text-xs mb-4">
                         <thead class="bg-blue-100">
                             <tr>
-                                <th class="border p-1 text-center" style="width: 30px;"></th>
+                                <th class="border p-1 text-center" style="width: 30px;">
+                                    <input type="checkbox" id="select-all-remove-products" class="w-4 h-4 cursor-pointer" title="Zaznacz wszystkie">
+                                </th>
                                 <th class="border p-1 text-left" style="white-space: nowrap;">Produkt</th>
                                 <th class="border p-1 text-left" style="width: 60px;">Dostawca</th>
                                 <th class="border p-1 text-center" style="width: 85px;">Cena netto</th>
@@ -179,12 +181,12 @@
                     </form>
                 </div>
 
-                <table class="w-full border border-collapse text-sm">
-                    <table class="w-full border border-collapse text-xs">
+                <table class="w-full border border-collapse text-xs">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="border p-2 text-left">Produkt</th>
                     <th class="border p-2 text-left">Opis</th>
+                    <th class="border p-2 text-left" style="width: 80px;">Dostawca</th>
                     <th class="border p-2 text-center">Pobrano</th>
                     <th class="border p-2 text-center">Stan po</th>
                     <th class="border p-2 text-left">Data</th>
@@ -199,6 +201,10 @@
 
                         <td class="border p-2">
                             {{ $r['description'] ?? '-' }}
+                        </td>
+
+                        <td class="border p-2 text-xs text-gray-700">
+                            {{ $r['supplier'] ?? '-' }}
                         </td>
 
                         <td class="border p-2 text-center text-red-600 font-bold">
@@ -299,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedProductsTable = document.getElementById('selected-products-table-inner').querySelector('tbody');
     const removeAllBtn = document.getElementById('remove-all-selected-btn-inner');
     const fetchAllBtn = document.getElementById('fetch-all-btn-inner');
+    const selectAllRemoveCheckbox = document.getElementById('select-all-remove-products');
     let selectedProducts = {};
 
     function updateSelectedProductsDisplay() {
@@ -494,6 +501,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelectedProductsDisplay();
         });
     });
+
+    // Globalny checkbox "Zaznacz wszystkie" w tabeli produktów do pobrania
+    if (selectAllRemoveCheckbox) {
+        selectAllRemoveCheckbox.addEventListener('change', function() {
+            const checkboxes = selectedProductsTable.querySelectorAll('.selected-product-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    }
 
     removeAllBtn.addEventListener('click', () => {
         selectedProducts = {};
