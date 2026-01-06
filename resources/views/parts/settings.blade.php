@@ -880,6 +880,56 @@
             });
         });
         
+        // Przycisk pobierania danych dostawcy po NIP
+        const fetchNipBtn = document.getElementById('fetch-nip-btn');
+        const nipInput = document.getElementById('nip-input');
+        
+        if (fetchNipBtn && nipInput) {
+            fetchNipBtn.addEventListener('click', function() {
+                const nip = nipInput.value.trim();
+                if (!nip) {
+                    alert('Wpisz NIP');
+                    return;
+                }
+                
+                fetchNipBtn.disabled = true;
+                fetchNipBtn.textContent = 'Pobieranie...';
+                
+                fetch(`/magazyn/ustawienia/supplier/fetch-by-nip?nip=${encodeURIComponent(nip)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert('Błąd: ' + data.error);
+                        } else {
+                            // Wypełnij formularz danymi z GUS
+                            document.getElementById('supplier-name').value = data.name || '';
+                            document.getElementById('supplier-name').value = data.full_name || data.name || '';
+                            if (document.querySelector('[name="nip"]')) {
+                                document.querySelector('[name="nip"]').value = data.nip || '';
+                            }
+                            if (document.querySelector('[name="address"]')) {
+                                document.querySelector('[name="address"]').value = data.address || '';
+                            }
+                            if (document.querySelector('[name="city"]')) {
+                                document.querySelector('[name="city"]').value = data.city || '';
+                            }
+                            if (document.querySelector('[name="postal_code"]')) {
+                                document.querySelector('[name="postal_code"]').value = data.postal_code || '';
+                            }
+                            alert('Dane pobrane pomyślnie! Sprawdź i uzupełnij pozostałe pola.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Błąd podczas pobierania danych: ' + error.message);
+                    })
+                    .finally(() => {
+                        fetchNipBtn.disabled = false;
+                        fetchNipBtn.textContent = 'Pobierz dane';
+                    });
+            });
+        }
+        
         // Auto-generowanie skróconej nazwy użytkownika
         var firstNameInput = document.getElementById('first_name');
         var lastNameInput = document.getElementById('last_name');

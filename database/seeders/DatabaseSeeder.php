@@ -17,18 +17,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Tworzenie konta Admin (jeśli nie istnieje)
-        if (!User::where('email', 'slawomir.janosz@gmail.com')->exists()) {
+        // Tworzenie głównego konta Admin proximalumine (jeśli nie istnieje)
+        if (!User::where('email', 'proximalumine@gmail.com')->exists()) {
             User::create([
-                'name' => 'Admin',
-                'email' => 'slawomir.janosz@gmail.com',
-                'password' => \Illuminate\Support\Facades\Hash::make('admin'),
+                'name' => 'ProximaLumine',
+                'first_name' => 'Proxima',
+                'last_name' => 'Lumine',
+                'short_name' => 'ProLum',
+                'email' => 'proximalumine@gmail.com',
+                'password' => \Illuminate\Support\Facades\Hash::make('Lumine1!'),
                 'is_admin' => true,
                 'can_view_catalog' => true,
                 'can_add' => true,
                 'can_remove' => true,
                 'can_orders' => true,
                 'can_settings' => true,
+                'can_settings_categories' => true,
+                'can_settings_suppliers' => true,
+                'can_settings_company' => true,
+                'can_settings_users' => true,
+                'can_settings_export' => true,
+                'can_settings_other' => true,
+                'can_delete_orders' => true,
+                'show_action_column' => true,
             ]);
         }
 
