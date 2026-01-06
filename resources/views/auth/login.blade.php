@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logowanie - Magazyn</title>
     @vite('resources/css/app.css')
+    <link rel="icon" type="image/png" href="{{ asset('logo_proxima_male.png') }}">
 </head>
 <body class="bg-gray-100">
     <div class="min-h-screen flex items-center justify-center">

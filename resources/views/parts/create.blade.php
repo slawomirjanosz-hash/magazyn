@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <title>Magazyn – Dodaj część</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="icon" type="image/png" href="{{ asset('logo_proxima_male.png') }}">
 </head>
 <body class="bg-gray-100">
 

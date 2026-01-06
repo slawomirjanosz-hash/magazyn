@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Magazyn – Edycja użytkownika</title>
+    <link rel="icon" type="image/png" href="{{ asset('logo_proxima_male.png') }}">
     @vite(['resources/css/app.css'])
 </head>
 <body class="bg-gray-100">
