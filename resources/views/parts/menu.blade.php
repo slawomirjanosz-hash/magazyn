@@ -71,3 +71,9 @@
     </div>
 </header>
 
+<!-- Stopka z logo i napisem Powered by ProximaLumine -->
+<div style="position: fixed; right: 20px; bottom: 10px; z-index: 50; color: #888; font-style: italic; font-size: 1rem; pointer-events: none; display: flex; align-items: center; gap: 8px;">
+    <img src="{{ asset('logo_proxima.png') }}" alt="ProximaLumine" style="height:44px;vertical-align:middle;">
+    <span>Powered by ProximaLumine</span>
+</div>
+

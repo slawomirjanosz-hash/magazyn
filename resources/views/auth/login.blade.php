@@ -70,6 +70,5 @@
             </form>
         </div>
     </div>
-<div style="position: fixed; right: 20px; bottom: 10px; z-index: 50; color: #888; font-style: italic; font-size: 1rem; pointer-events: none;">Powered by ProximaLumine</div>
 </body>
 </html>

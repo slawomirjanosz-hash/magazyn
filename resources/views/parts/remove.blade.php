@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             throw new Error(err.message || 'Błąd podczas pobierania');
                         });
                     }
-                    return response.json();
+                    return response.json;
                 })
                 .then((data) => {
                     console.log('Odpowiedź serwera:', data);
@@ -547,6 +547,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<div style="position: fixed; right: 20px; bottom: 10px; z-index: 50; color: #888; font-style: italic; font-size: 1rem; pointer-events: none;">Powered by ProximaLumine</div>
 </body>
 </html>
