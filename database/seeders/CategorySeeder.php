@@ -12,9 +12,6 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-    foreach (['Siemens', 'Pneumatyka', 'Elektryka'] as $name) 
-        {
-        Category::firstOrCreate(['name' => $name]);
-        }
+        // Kategorie zostaną dodane przez użytkownika w ustawieniach
     }
 }

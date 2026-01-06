@@ -42,68 +42,6 @@ class DatabaseSeeder extends Seeder
                 'show_action_column' => true,
             ]);
         }
-
-        // Tworzenie konta admin (login: admin, email: admin@admin.com, hasło: admin)
-        if (!User::where('email', 'admin@admin.com')->exists()) {
-            User::create([
-                'name' => 'Admin',
-                'email' => 'admin@admin.com',
-                'password' => \Illuminate\Support\Facades\Hash::make('admin'),
-                'is_admin' => true,
-                'can_view_catalog' => true,
-                'can_add' => true,
-                'can_remove' => true,
-                'can_orders' => true,
-                'can_settings' => true,
-            ]);
-        }
-
-        // Test User (jeśli nie istnieje)
-        if (!User::where('email', 'test@example.com')->exists()) {
-            User::create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'password' => \Illuminate\Support\Facades\Hash::make('test'),
-                'is_admin' => false,
-                'can_view_catalog' => true,
-                'can_add' => false,
-                'can_remove' => false,
-                'can_orders' => false,
-                'can_settings' => false,
-            ]);
-        }
-
-        // Kategorie
-        $kategorieNames = [
-            'Elektronika',
-            'Mechanika',
-            'Oprogramowanie',
-            'Akcesoria',
-            'Materiały zużywalne'
-        ];
-
-        foreach ($kategorieNames as $name) {
-            Category::firstOrCreate(['name' => $name]);
-        }
-
-        // Przykładowe produkty
-        $parts = [
-            ['name' => 'Arduino Uno', 'description' => 'Mikrokontroler Arduino', 'category_id' => 1, 'quantity' => 15],
-            ['name' => 'Raspberry Pi 4', 'description' => 'Komputer jednopłytkowy', 'category_id' => 1, 'quantity' => 8],
-            ['name' => 'Czujnik temperatury DS18B20', 'description' => 'Cyfrowy czujnik temperatury', 'category_id' => 1, 'quantity' => 42],
-            ['name' => 'Dioda LED RGB', 'description' => '5mm RGB LED', 'category_id' => 1, 'quantity' => 100],
-            ['name' => 'Rezystor 10k', 'description' => 'Rezystor 1/4W', 'category_id' => 1, 'quantity' => 500],
-            ['name' => 'Silnik krokowy NEMA 17', 'description' => 'Silnik krokowy', 'category_id' => 2, 'quantity' => 5],
-            ['name' => 'Łożysko kulkowe 608', 'description' => 'Łożysko 8x22x7mm', 'category_id' => 2, 'quantity' => 20],
-            ['name' => 'Śruba M4x20', 'description' => 'Śruba stalowa', 'category_id' => 2, 'quantity' => 200],
-            ['name' => 'Python', 'description' => 'Licencja Python', 'category_id' => 3, 'quantity' => 1],
-            ['name' => 'USB Kabel', 'description' => 'Kabel USB A-B', 'category_id' => 4, 'quantity' => 25],
-            ['name' => 'Pasta termalna', 'description' => 'Pasta termalna do procesorów', 'category_id' => 5, 'quantity' => 10],
-        ];
-
-        foreach ($parts as $part) {
-            Part::firstOrCreate(['name' => $part['name']], $part);
-        }
         
         // Ustawienia firmy i zamówień
         $this->call([
