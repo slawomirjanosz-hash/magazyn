@@ -759,9 +759,14 @@ class PartController extends Controller
     // USUWANIE UŻYTKOWNIKA
     public function deleteUser(User $user)
     {
-        // Nie pozwalaj usunąć Admina
-        if ($user->is_admin) {
-            return redirect()->route('magazyn.settings')->with('error', 'Nie można usunąć konta Admin!');
+        // Nie pozwalaj usunąć głównego admina (proximalumine@gmail.com)
+        if ($user->email === 'proximalumine@gmail.com') {
+            return redirect()->route('magazyn.settings')->with('error', 'Nie można usunąć głównego konta Admin!');
+        }
+
+        // Jeśli użytkownik jest adminem, sprawdź czy zalogowany to główny admin
+        if ($user->is_admin && auth()->user()->email !== 'proximalumine@gmail.com') {
+            return redirect()->route('magazyn.settings')->with('error', 'Tylko główny administrator może usuwać konta administratorów!');
         }
 
         $name = $user->name;
