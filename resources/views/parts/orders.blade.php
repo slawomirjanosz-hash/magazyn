@@ -342,6 +342,9 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Orders page JavaScript loaded');
+    
     // Accordion - Collapsible sekcje
     document.querySelectorAll('.collapsible-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -370,6 +373,10 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
     const removeAllBtnInner = document.getElementById('remove-all-selected-btn-inner');
     const createOrderBtn = document.getElementById('create-order-btn-inner');
     const orderNameInput = document.getElementById('order-name-input');
+    
+    console.log('Create order button element:', createOrderBtn);
+    console.log('Remove all button element:', removeAllBtnInner);
+    
     const paymentMethodSelect = document.getElementById('payment-method');
     const paymentDaysContainer = document.getElementById('payment-days-container');
     const deliveryTimeSelect = document.getElementById('delivery-time');
@@ -554,7 +561,11 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
     }
 
     if (createOrderBtn) {
+        console.log('Attaching click event to create order button');
         createOrderBtn.addEventListener('click', function() {
+            console.log('Create order button clicked!');
+            console.log('Selected products:', selectedProducts);
+            
             if (Object.keys(selectedProducts).length === 0) {
                 alert('Wybierz produkty do zamówienia');
                 return;
@@ -1130,7 +1141,9 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
             alert('Wystąpił błąd podczas przyjmowania zamówienia');
         });
     });
-
+    
+    console.log('Orders page JavaScript initialization complete');
+});
 </script>
 
 <div style="position: fixed; right: 20px; bottom: 10px; z-index: 50; color: #888; font-style: italic; font-size: 1rem; pointer-events: none;">Powered by ProximaLumine</div>
