@@ -853,17 +853,225 @@
                     <h4 class="font-semibold text-gray-800">Ustawienia Zamówień</h4>
                 </button>
                 <div id="orders-settings-content" class="collapsible-content hidden p-4 border-t bg-gray-50">
-                    <p class="text-gray-600 text-sm mb-3">Konfiguracja funkcji zamówień jest dostępna w zakładce "Zamówienia" w ustawieniach eksportu oraz przy tworzeniu nowego zamówienia.</p>
+                    <p class="text-gray-600 text-sm mb-4 font-semibold">Konfigurator formatu nazwy zamówienia:</p>
                     
-                    <div class="text-sm text-gray-500">
-                        <p>Dostępne opcje podczas tworzenia zamówienia:</p>
-                        <ul class="list-disc ml-4 mt-2 space-y-1">
-                            <li>Numer oferty dostawcy</li>
-                            <li>Metoda płatności (przelew/gotówka/karta)</li>
-                            <li>Termin płatności (dni)</li>
-                            <li>Czas dostawy</li>
-                        </ul>
-                    </div>
+                    @php
+                        $orderSettings = \DB::table('order_settings')->first();
+                    @endphp
+                    
+                    <form action="{{ route('magazyn.orders.save-settings') }}" method="POST" class="space-y-4">
+                        @csrf
+                        
+                        {{-- Element 1 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Element 1:</label>
+                            <div class="flex gap-2 items-center">
+                                <select name="element1_type" class="px-2 py-1 border border-gray-300 rounded text-sm" onchange="toggleElement1Input(this.value)">
+                                    <option value="empty" {{ ($orderSettings->element1_type ?? '') === 'empty' ? 'selected' : '' }}>-- brak --</option>
+                                    <option value="text" {{ ($orderSettings->element1_type ?? '') === 'text' ? 'selected' : '' }}>Tekst</option>
+                                    <option value="date" {{ ($orderSettings->element1_type ?? '') === 'date' ? 'selected' : '' }}>Data (YYYYMMDD)</option>
+                                    <option value="time" {{ ($orderSettings->element1_type ?? '') === 'time' ? 'selected' : '' }}>Godzina (HHMM)</option>
+                                    <option value="number" {{ ($orderSettings->element1_type ?? '') === 'number' ? 'selected' : '' }}>Numer inkrementowany</option>
+                                    <option value="supplier" {{ ($orderSettings->element1_type ?? '') === 'supplier' ? 'selected' : '' }}>Skrót dostawcy</option>
+                                </select>
+                                
+                                <input 
+                                    type="text" 
+                                    name="element1_value" 
+                                    id="element1_value"
+                                    value="{{ $orderSettings->element1_value ?? '' }}"
+                                    placeholder="Wartość (np. ZAM)"
+                                    class="px-2 py-1 border border-gray-300 rounded text-sm flex-1"
+                                    {{ ($orderSettings->element1_type ?? 'empty') !== 'text' ? 'style=display:none' : '' }}
+                                >
+                            </div>
+                        </div>
+                        
+                        {{-- Separator 1 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Separator 1:</label>
+                            <input 
+                                type="text" 
+                                name="separator1" 
+                                value="{{ $orderSettings->separator1 ?? '_' }}"
+                                placeholder="_"
+                                maxlength="3"
+                                class="px-2 py-1 border border-gray-300 rounded text-sm w-20"
+                            >
+                            <span class="text-xs text-gray-500 ml-2">(np. _ - / itd.)</span>
+                        </div>
+                        
+                        {{-- Element 2 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Element 2:</label>
+                            <div class="flex gap-2 items-center">
+                                <select name="element2_type" class="px-2 py-1 border border-gray-300 rounded text-sm" onchange="toggleElement2Input(this.value)">
+                                    <option value="empty" {{ ($orderSettings->element2_type ?? '') === 'empty' ? 'selected' : '' }}>-- brak --</option>
+                                    <option value="text" {{ ($orderSettings->element2_type ?? '') === 'text' ? 'selected' : '' }}>Tekst</option>
+                                    <option value="date" {{ ($orderSettings->element2_type ?? '') === 'date' ? 'selected' : '' }}>Data (YYYYMMDD)</option>
+                                    <option value="time" {{ ($orderSettings->element2_type ?? '') === 'time' ? 'selected' : '' }}>Godzina (HHMM)</option>
+                                    <option value="number" {{ ($orderSettings->element2_type ?? '') === 'number' ? 'selected' : '' }}>Numer inkrementowany</option>
+                                    <option value="supplier" {{ ($orderSettings->element2_type ?? '') === 'supplier' ? 'selected' : '' }}>Skrót dostawcy</option>
+                                </select>
+                                
+                                <input 
+                                    type="text" 
+                                    name="element2_value" 
+                                    id="element2_value"
+                                    value="{{ $orderSettings->element2_value ?? '' }}"
+                                    placeholder="Wartość"
+                                    class="px-2 py-1 border border-gray-300 rounded text-sm flex-1"
+                                    {{ ($orderSettings->element2_type ?? 'empty') !== 'text' ? 'style=display:none' : '' }}
+                                >
+                            </div>
+                        </div>
+                        
+                        {{-- Separator 2 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Separator 2:</label>
+                            <input 
+                                type="text" 
+                                name="separator2" 
+                                value="{{ $orderSettings->separator2 ?? '_' }}"
+                                placeholder="_"
+                                maxlength="3"
+                                class="px-2 py-1 border border-gray-300 rounded text-sm w-20"
+                            >
+                            <span class="text-xs text-gray-500 ml-2">(np. _ - / itd.)</span>
+                        </div>
+                        
+                        {{-- Element 3 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Element 3:</label>
+                            <div class="flex gap-2 items-center">
+                                <select name="element3_type" class="px-2 py-1 border border-gray-300 rounded text-sm" onchange="toggleElement3Input(this.value)">
+                                    <option value="empty" {{ ($orderSettings->element3_type ?? '') === 'empty' ? 'selected' : '' }}>-- brak --</option>
+                                    <option value="text" {{ ($orderSettings->element3_type ?? '') === 'text' ? 'selected' : '' }}>Tekst</option>
+                                    <option value="date" {{ ($orderSettings->element3_type ?? '') === 'date' ? 'selected' : '' }}>Data (YYYYMMDD)</option>
+                                    <option value="time" {{ ($orderSettings->element3_type ?? '') === 'time' ? 'selected' : '' }}>Godzina (HHMM)</option>
+                                    <option value="number" {{ ($orderSettings->element3_type ?? '') === 'number' ? 'selected' : '' }}>Numer inkrementowany</option>
+                                    <option value="supplier" {{ ($orderSettings->element3_type ?? '') === 'supplier' ? 'selected' : '' }}>Skrót dostawcy</option>
+                                </select>
+                                
+                                <input 
+                                    type="text" 
+                                    name="element3_value" 
+                                    id="element3_value"
+                                    value="{{ $orderSettings->element3_value ?? '' }}"
+                                    placeholder="Wartość"
+                                    class="px-2 py-1 border border-gray-300 rounded text-sm flex-1"
+                                    {{ ($orderSettings->element3_type ?? 'empty') !== 'text' ? 'style=display:none' : '' }}
+                                >
+                            </div>
+                        </div>
+                        
+                        {{-- Separator 3 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Separator 3:</label>
+                            <input 
+                                type="text" 
+                                name="separator3" 
+                                value="{{ $orderSettings->separator3 ?? '_' }}"
+                                placeholder="_"
+                                maxlength="3"
+                                class="px-2 py-1 border border-gray-300 rounded text-sm w-20"
+                            >
+                            <span class="text-xs text-gray-500 ml-2">(np. _ - / itd.)</span>
+                        </div>
+                        
+                        {{-- Element 4 --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Element 4:</label>
+                            <div class="flex gap-2 items-center">
+                                <select name="element4_type" class="px-2 py-1 border border-gray-300 rounded text-sm" onchange="toggleElement4Input(this.value)">
+                                    <option value="empty" {{ ($orderSettings->element4_type ?? '') === 'empty' ? 'selected' : '' }}>-- brak --</option>
+                                    <option value="text" {{ ($orderSettings->element4_type ?? '') === 'text' ? 'selected' : '' }}>Tekst</option>
+                                    <option value="date" {{ ($orderSettings->element4_type ?? '') === 'date' ? 'selected' : '' }}>Data (YYYYMMDD)</option>
+                                    <option value="time" {{ ($orderSettings->element4_type ?? '') === 'time' ? 'selected' : '' }}>Godzina (HHMM)</option>
+                                    <option value="number" {{ ($orderSettings->element4_type ?? '') === 'number' ? 'selected' : '' }}>Numer inkrementowany</option>
+                                    <option value="supplier" {{ ($orderSettings->element4_type ?? '') === 'supplier' ? 'selected' : '' }}>Skrót dostawcy</option>
+                                </select>
+                                
+                                <input 
+                                    type="text" 
+                                    name="element4_value" 
+                                    id="element4_value"
+                                    value="{{ $orderSettings->element4_value ?? '' }}"
+                                    placeholder="Wartość"
+                                    class="px-2 py-1 border border-gray-300 rounded text-sm flex-1"
+                                    {{ ($orderSettings->element4_type ?? 'empty') !== 'text' ? 'style=display:none' : '' }}
+                                >
+                            </div>
+                        </div>
+                        
+                        {{-- Numer startowy (dla type=number) --}}
+                        <div class="bg-white p-3 rounded border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Numer startowy (dla elementu typu "Numer inkrementowany"):</label>
+                            <input 
+                                type="number" 
+                                name="start_number" 
+                                value="{{ $orderSettings->start_number ?? 1 }}"
+                                min="1"
+                                class="px-2 py-1 border border-gray-300 rounded text-sm w-32"
+                            >
+                            <span class="text-xs text-gray-500 ml-2">(np. 1, 100, 1000 itd.)</span>
+                        </div>
+                        
+                        {{-- Podgląd --}}
+                        <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Podgląd nazwy zamówienia:</label>
+                            <div id="order-name-preview" class="font-mono text-lg text-blue-700 font-bold">
+                                {{ 
+                                    ($orderSettings->element1_type ?? 'empty') !== 'empty' 
+                                    ? (($orderSettings->element1_type ?? '') === 'text' ? ($orderSettings->element1_value ?? 'ZAM') : 'ELEMENT1')
+                                    : ''
+                                }}{{ 
+                                    ($orderSettings->element2_type ?? 'empty') !== 'empty' && ($orderSettings->element1_type ?? 'empty') !== 'empty'
+                                    ? ($orderSettings->separator1 ?? '_')
+                                    : ''
+                                }}{{ 
+                                    ($orderSettings->element2_type ?? 'empty') !== 'empty' 
+                                    ? (($orderSettings->element2_type ?? '') === 'text' ? ($orderSettings->element2_value ?? 'ELEMENT2') : 'ELEMENT2')
+                                    : ''
+                                }}{{
+                                    ($orderSettings->element3_type ?? 'empty') !== 'empty' && ($orderSettings->element2_type ?? 'empty') !== 'empty'
+                                    ? ($orderSettings->separator2 ?? '_')
+                                    : ''
+                                }}{{ 
+                                    ($orderSettings->element3_type ?? 'empty') !== 'empty' 
+                                    ? (($orderSettings->element3_type ?? '') === 'text' ? ($orderSettings->element3_value ?? 'ELEMENT3') : 'ELEMENT3')
+                                    : ''
+                                }}{{
+                                    ($orderSettings->element4_type ?? 'empty') !== 'empty' && ($orderSettings->element3_type ?? 'empty') !== 'empty'
+                                    ? ($orderSettings->separator3 ?? '_')
+                                    : ''
+                                }}{{ 
+                                    ($orderSettings->element4_type ?? 'empty') !== 'empty' 
+                                    ? (($orderSettings->element4_type ?? '') === 'text' ? ($orderSettings->element4_value ?? 'ELEMENT4') : 'ELEMENT4')
+                                    : ''
+                                }}
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                            Zapisz format nazwy zamówienia
+                        </button>
+                    </form>
+                    
+                    <script>
+                        function toggleElement1Input(type) {
+                            document.getElementById('element1_value').style.display = type === 'text' ? 'block' : 'none';
+                        }
+                        function toggleElement2Input(type) {
+                            document.getElementById('element2_value').style.display = type === 'text' ? 'block' : 'none';
+                        }
+                        function toggleElement3Input(type) {
+                            document.getElementById('element3_value').style.display = type === 'text' ? 'block' : 'none';
+                        }
+                        function toggleElement4Input(type) {
+                            document.getElementById('element4_value').style.display = type === 'text' ? 'block' : 'none';
+                        }
+                    </script>
                 </div>
             </div>
         </div>
