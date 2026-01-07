@@ -857,6 +857,22 @@
                     
                     @php
                         $orderSettings = \DB::table('order_settings')->first();
+                        if (!$orderSettings) {
+                            $orderSettings = (object)[
+                                'element1_type' => 'empty',
+                                'element1_value' => '',
+                                'separator1' => '_',
+                                'element2_type' => 'empty',
+                                'element2_value' => '',
+                                'separator2' => '_',
+                                'element3_type' => 'empty',
+                                'element3_value' => '',
+                                'separator3' => '_',
+                                'element4_type' => 'empty',
+                                'element4_value' => '',
+                                'start_number' => 1
+                            ];
+                        }
                     @endphp
                     
                     <form action="{{ route('magazyn.orders.save-settings') }}" method="POST" class="space-y-4">
