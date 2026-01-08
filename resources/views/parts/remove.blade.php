@@ -60,6 +60,17 @@
             required
         >
 
+        {{-- POBIERZ DO PROJEKTU --}}
+        <select
+            name="project_id"
+            class="border p-2 rounded text-sm"
+        >
+            <option value="">- Standardowe pobranie -</option>
+            @foreach($projects ?? [] as $proj)
+                <option value="{{ $proj->id }}">{{ $proj->project_number }} - {{ $proj->name }}</option>
+            @endforeach
+        </select>
+
             {{-- PRZYCISK --}}
             <button
                 type="submit"

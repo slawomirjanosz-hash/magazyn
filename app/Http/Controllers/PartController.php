@@ -36,6 +36,7 @@ class PartController extends Controller
             'sessionRemoves' => array_reverse(session('removes', [])),
             'parts' => Part::with(['category', 'lastModifiedBy'])->orderBy('name')->get(),
             'suppliers' => Supplier::orderBy('name')->get(),
+            'projects' => \App\Models\Project::where('status', 'in_progress')->orderBy('project_number')->get(),
         ]);
     }
 
@@ -134,15 +135,39 @@ class PartController extends Controller
             'status' => 'in_progress',
         ]);
 
-        // Przypisz części do projektu
-        if ($request->filled('parts_data')) {
-            $partsData = json_decode($request->parts_data, true);
-            foreach ($partsData as $partData) {
-                $project->parts()->attach($partData['part_id'], ['quantity' => $partData['quantity']]);
-            }
-        }
-
         return redirect()->route('magazyn.projects')->with('success', 'Projekt "' . $project->name . '" został utworzony.');
+    }
+
+    public function showProject(\App\Models\Project $project)
+    {
+        // Pobierz zgrupowane pobierania (część + user)
+        $removals = \App\Models\ProjectRemoval::where('project_id', $project->id)
+            ->with(['part', 'user'])
+            ->selectRaw('part_id, user_id, SUM(quantity) as total_quantity')
+            ->groupBy('part_id', 'user_id')
+            ->get();
+
+        return view('parts.project-details', [
+            'project' => $project->load('responsibleUser'),
+            'removals' => $removals,
+        ]);
+    }
+
+    public function getRemovalDates($projectId, Request $request)
+    {
+        $removals = \App\Models\ProjectRemoval::where('project_id', $projectId)
+            ->where('part_id', $request->part_id)
+            ->where('user_id', $request->user_id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($r) {
+                return [
+                    'date' => $r->created_at->format('Y-m-d H:i'),
+                    'quantity' => $r->quantity,
+                ];
+            });
+
+        return response()->json(['removals' => $removals]);
     }
 
     // DODAJ KATEGORIĘ
@@ -613,6 +638,7 @@ class PartController extends Controller
         $data = $request->validate([
             'name'     => 'required|string',
             'quantity' => 'required|integer|min:1',
+            'project_id' => 'nullable|exists:projects,id',
         ]);
 
         $part = Part::where('name', $data['name'])->first();
@@ -656,6 +682,16 @@ class PartController extends Controller
             'currency' => $part->currency ?? 'PLN',
             'stock_after' => $part->quantity,
         ]);
+
+        // Jeśli pobieranie do projektu, zapisz w project_removals
+        if ($request->filled('project_id')) {
+            \App\Models\ProjectRemoval::create([
+                'project_id' => $data['project_id'],
+                'part_id' => $part->id,
+                'user_id' => auth()->id(),
+                'quantity' => $removed,
+            ]);
+        }
 
         // Pobierz skróconą nazwę dostawcy dla historii
         $supplierDisplay = '';

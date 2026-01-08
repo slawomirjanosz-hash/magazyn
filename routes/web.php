@@ -71,4 +71,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/magazyn/projekty', [PartController::class, 'projectsView'])->name('magazyn.projects')->middleware('auth');
     Route::post('/magazyn/projekty', [PartController::class, 'storeProject'])->name('magazyn.projects.store')->middleware('auth');
+    Route::get('/magazyn/projekty/{project}', [PartController::class, 'showProject'])->name('magazyn.projects.show')->middleware('auth');
+    Route::get('/magazyn/projects/{project}/removal-dates', [PartController::class, 'getRemovalDates'])->name('magazyn.projects.removal-dates')->middleware('auth');
 });

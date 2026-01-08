@@ -78,18 +78,6 @@
                     </div>
                 </div>
                 
-                <div>
-                    <h4 class="font-semibold mb-2">Lista przypisanych części</h4>
-                    <div id="parts-list" class="border rounded p-4 bg-gray-50 min-h-[100px]">
-                        <p class="text-gray-500 text-sm">Kliknij "Dodaj część", aby przypisać części do projektu</p>
-                    </div>
-                    <button type="button" id="add-part-btn" class="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                        + Dodaj część
-                    </button>
-                </div>
-                
-                <input type="hidden" name="parts_data" id="parts-data-input" value="[]">
-                
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
                     Utwórz Projekt
                 </button>
@@ -120,7 +108,7 @@
                                 <td class="border p-2 text-right">{{ $project->budget ? number_format($project->budget, 2) . ' PLN' : '-' }}</td>
                                 <td class="border p-2">{{ $project->responsibleUser->name ?? '-' }}</td>
                                 <td class="border p-2 text-center">
-                                    <button class="text-blue-600 hover:underline text-sm">Szczegóły</button>
+                                    <a href="{{ route('magazyn.projects.show', $project->id) }}" class="text-blue-600 hover:underline text-sm">Szczegóły</a>
                                 </td>
                             </tr>
                         @empty
@@ -157,7 +145,7 @@
                                 <td class="border p-2 text-right">{{ $project->budget ? number_format($project->budget, 2) . ' PLN' : '-' }}</td>
                                 <td class="border p-2">{{ $project->responsibleUser->name ?? '-' }}</td>
                                 <td class="border p-2 text-center">
-                                    <button class="text-blue-600 hover:underline text-sm">Szczegóły</button>
+                                    <a href="{{ route('magazyn.projects.show', $project->id) }}" class="text-blue-600 hover:underline text-sm">Szczegóły</a>
                                 </td>
                             </tr>
                         @empty
@@ -194,7 +182,7 @@
                                 <td class="border p-2 text-right">{{ $project->budget ? number_format($project->budget, 2) . ' PLN' : '-' }}</td>
                                 <td class="border p-2">{{ $project->responsibleUser->name ?? '-' }}</td>
                                 <td class="border p-2 text-center">
-                                    <button class="text-blue-600 hover:underline text-sm">Szczegóły</button>
+                                    <a href="{{ route('magazyn.projects.show', $project->id) }}" class="text-blue-600 hover:underline text-sm">Szczegóły</a>
                                 </td>
                             </tr>
                         @empty
@@ -255,42 +243,6 @@
             this.classList.add('bg-blue-500', 'text-white', 'active-tab');
         });
     });
-    
-    // Parts management
-    const partsData = [];
-    const partsList = document.getElementById('parts-list');
-    const partsDataInput = document.getElementById('parts-data-input');
-    const addPartBtn = document.getElementById('add-part-btn');
-    
-    addPartBtn.addEventListener('click', function() {
-        const partId = prompt('Podaj ID części:');
-        if (!partId) return;
-        
-        const quantity = prompt('Ilość:', '1');
-        if (!quantity) return;
-        
-        partsData.push({ part_id: partId, quantity: parseInt(quantity) });
-        updatePartsDisplay();
-    });
-    
-    function updatePartsDisplay() {
-        if (partsData.length === 0) {
-            partsList.innerHTML = '<p class="text-gray-500 text-sm">Kliknij "Dodaj część", aby przypisać części do projektu</p>';
-        } else {
-            let html = '<table class="w-full border border-collapse text-xs"><thead class="bg-gray-100"><tr><th class="border p-2">ID części</th><th class="border p-2">Ilość</th><th class="border p-2">Akcje</th></tr></thead><tbody>';
-            partsData.forEach((p, index) => {
-                html += `<tr><td class="border p-2">${p.part_id}</td><td class="border p-2">${p.quantity}</td><td class="border p-2"><button type="button" onclick="removePart(${index})" class="text-red-600 text-xs">Usuń</button></td></tr>`;
-            });
-            html += '</tbody></table>';
-            partsList.innerHTML = html;
-        }
-        partsDataInput.value = JSON.stringify(partsData);
-    }
-    
-    window.removePart = function(index) {
-        partsData.splice(index, 1);
-        updatePartsDisplay();
-    };
 </script>
 
 </body>

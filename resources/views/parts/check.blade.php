@@ -110,8 +110,10 @@
     @endphp
     
     @if($belowMinimumCount > 0)
-        <div class="mb-4 p-3 bg-red-100 border border-red-400 rounded">
-            <p class="text-red-800 font-semibold">⚠️ {{ $belowMinimumCount }} {{ $belowMinimumCount === 1 ? 'pozycja jest' : 'pozycji jest' }} poniżej stanu minimum</p>
+        <div class="flex justify-end mb-4">
+            <div class="p-2 bg-red-100 border border-red-400 rounded text-xs" style="max-width: 50ch;">
+                <p class="text-red-800 font-semibold">⚠️ {{ $belowMinimumCount }} {{ Str::limit($belowMinimumCount === 1 ? 'pozycja poniżej min' : 'pozycji poniżej min', 50) }}</p>
+            </div>
         </div>
     @endif
 
@@ -124,28 +126,28 @@
                 <th class="border p-2 text-center text-xs">
                     <input type="checkbox" id="select-all" class="w-4 h-4 cursor-pointer" title="Zaznacz wszystkie">
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem] sortable" data-column="name">
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[12rem] max-w-[18rem] sortable" data-column="name">
                     Produkty <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[28rem] sortable" data-column="description">
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[10rem] max-w-[20rem] sortable" data-column="description">
                     Opis <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] sortable" data-column="supplier">
+                <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="supplier" style="width: 4rem;">
                     Dost. <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] sortable" data-column="price">
-                    Cena netto <span class="sort-icon">▲</span>
+                <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="price" style="width: 5rem;">
+                    Cena <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[6.5rem] sortable" data-column="category">
-                    Kategoria <span class="sort-icon">▲</span>
+                <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="category" style="width: 6rem;">
+                    Kat. <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 text-center cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem] sortable" data-column="quantity">
+                <th class="border p-1 text-center cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="quantity" style="width: 3rem;">
                     Stan <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 text-center text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem]">
-                    Stan min.
+                <th class="border p-1 text-center text-xs whitespace-nowrap" style="width: 3rem;">
+                    Min
                 </th>
-                <th class="border p-1 text-center text-xs whitespace-nowrap min-w-[4.5rem]" style="width: 6ch;">User</th>
+                <th class="border p-1 text-center text-xs whitespace-nowrap" style="width: 4ch;">User</th>
                 @if(auth()->user()->show_action_column)
                     <th class="border p-2 text-center text-xs whitespace-nowrap min-w-[5.5rem]">Akcja</th>
                 @endif
@@ -218,45 +220,40 @@
 
                     {{-- AKCJE --}}
                     @if(auth()->user()->show_action_column)
-                        <td class="border p-2">
-                            <div class="flex items-center justify-between gap-2">
+                        <td class="border p-1">
+                            <div class="flex items-center justify-center gap-1">
 
-                                <!-- + / - -->
-                                <div class="flex gap-2 justify-center flex-1">
+                                {{-- ➕ --}}
+                                <form method="POST" action="{{ route('parts.add') }}">
+                                    @csrf
+                                    <input type="hidden" name="name" value="{{ $p->name }}">
+                                    <input type="hidden" name="category_id" value="{{ $p->category_id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <input type="hidden" name="redirect_to" value="check">
+                                    <input type="hidden" name="search" value="{{ request('search') }}">
+                                    <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
 
-                                    {{-- ➕ --}}
-                                    <form method="POST" action="{{ route('parts.add') }}">
-                                        @csrf
-                                        <input type="hidden" name="name" value="{{ $p->name }}">
-                                        <input type="hidden" name="category_id" value="{{ $p->category_id }}">
-                                        <input type="hidden" name="quantity" value="1">
-                                        <input type="hidden" name="redirect_to" value="check">
-                                        <input type="hidden" name="search" value="{{ request('search') }}">
-                                        <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
+                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
+                                        ➕
+                                    </button>
+                                </form>
 
-                                        <button class="bg-gray-200 px-2 rounded">
-                                            ➕
-                                        </button>
-                                    </form>
+                                {{-- ➖ --}}
+                                <form method="POST" action="{{ route('parts.remove') }}">
+                                    @csrf
+                                    <input type="hidden" name="name" value="{{ $p->name }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <input type="hidden" name="redirect_to" value="check">
+                                    <input type="hidden" name="search" value="{{ request('search') }}">
+                                    <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
 
-                                    {{-- ➖ --}}
-                                    <form method="POST" action="{{ route('parts.remove') }}">
-                                        @csrf
-                                        <input type="hidden" name="name" value="{{ $p->name }}">
-                                        <input type="hidden" name="quantity" value="1">
-                                        <input type="hidden" name="redirect_to" value="check">
-                                        <input type="hidden" name="search" value="{{ request('search') }}">
-                                        <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
-
-                                        <button class="bg-gray-200 px-2 rounded">
-                                            ➖
-                                        </button>
-                                    </form>
-
-                                </div>
+                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
+                                        ➖
+                                    </button>
+                                </form>
 
                                 {{-- ✏️ EDYCJA --}}
-                                <button class="bg-blue-100 hover:bg-blue-200 px-2 rounded text-sm edit-part-btn" 
+                                <button class="bg-blue-100 hover:bg-blue-200 px-1 py-0.5 rounded text-xs edit-part-btn" 
                                         data-part-id="{{ $p->id }}"
                                         data-part-name="{{ $p->name }}"
                                         data-part-description="{{ $p->description ?? '' }}"
@@ -277,7 +274,7 @@
                                     @csrf
                                     @method('DELETE')
 
-                                    <button class="bg-gray-200 px-2 rounded">
+                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
                                         ❌
                                     </button>
                                 </form>

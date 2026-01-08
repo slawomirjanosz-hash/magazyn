@@ -32,4 +32,9 @@ class Project extends Model
                     ->withPivot('quantity')
                     ->withTimestamps();
     }
+
+    public function removals()
+    {
+        return $this->hasMany(\App\Models\ProjectRemoval::class);
+    }
 }
