@@ -1346,6 +1346,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (orderRow) {
                 // Dodaj zielone podświetlenie
                 orderRow.classList.add('bg-green-50');
+                
+                // Usuń przyciski edycji/usuwania z wiersza
+                const editBtn = orderRow.querySelector('.edit-order-btn');
+                const deleteBtn = orderRow.querySelector('.delete-order-btn');
+                if (editBtn) editBtn.remove();
+                if (deleteBtn) deleteBtn.remove();
+                
+                // Zaktualizuj data-order-status w przycisku podglądu
+                const previewBtn = orderRow.querySelector('.preview-order-btn');
+                if (previewBtn) {
+                    previewBtn.setAttribute('data-order-status', 'received');
+                }
+            }
+            
+            // Zaktualizuj status w podglądzie
+            const statusElement = document.querySelector('#order-preview-content .text-green-600, #order-preview-content .text-orange-600');
+            if (statusElement) {
+                statusElement.textContent = 'Przyjęte';
+                statusElement.className = 'text-green-600 font-semibold';
             }
         })
         .catch(error => {

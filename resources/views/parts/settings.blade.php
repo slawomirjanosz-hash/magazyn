@@ -81,8 +81,37 @@
                 <p class="text-gray-600 mb-3">Lista aktualnych kategorii:</p>
                 <div class="flex flex-col gap-2">
                     @forelse($categories as $cat)
-                        <div class="flex items-center gap-2">
-                            <span class="category-box px-2 py-0.5 bg-gray-100 rounded border border-gray-300 text-xs whitespace-nowrap">{{ $cat->name }}</span>
+                        <div class="flex items-center gap-2" id="category-row-{{ $cat->id }}">
+                            <form action="{{ route('magazyn.category.update', $cat->id) }}" method="POST" class="flex items-center gap-2 flex-1" id="edit-form-{{ $cat->id }}">
+                                @csrf
+                                @method('PUT')
+                                <input 
+                                    type="text" 
+                                    name="name" 
+                                    value="{{ $cat->name }}"
+                                    class="category-box px-2 py-0.5 bg-gray-100 rounded border border-gray-300 text-xs whitespace-nowrap"
+                                    id="category-input-{{ $cat->id }}"
+                                    readonly
+                                    onclick="enableCategoryEdit({{ $cat->id }})"
+                                >
+                                <button 
+                                    type="submit" 
+                                    class="hidden text-green-600 hover:text-green-800 font-bold text-sm" 
+                                    id="save-btn-{{ $cat->id }}"
+                                    title="Zapisz zmiany"
+                                >
+                                    ✓
+                                </button>
+                                <button 
+                                    type="button" 
+                                    class="hidden text-gray-600 hover:text-gray-800 font-bold text-sm" 
+                                    id="cancel-btn-{{ $cat->id }}"
+                                    onclick="cancelCategoryEdit({{ $cat->id }}, '{{ $cat->name }}')"
+                                    title="Anuluj"
+                                >
+                                    ✕
+                                </button>
+                            </form>
                             <span class="count-badge bg-blue-600 text-white text-xs px-1.5 py-0 rounded-full">{{ $cat->parts_count }}</span>
                             @if($cat->parts_count > 0)
                                 <form action="{{ route('magazyn.category.clearContents', $cat->id) }}" method="POST" class="inline" id="clear-form-{{ $cat->id }}">
@@ -90,7 +119,8 @@
                                     @method('DELETE')
                                     <button type="button" class="text-orange-600 hover:text-orange-800 font-bold text-sm leading-none" title="Usuń zawartość kategorii" onclick="if(confirm('Czy na pewno chcesz usunąć zawartość kategorii &quot;{{ $cat->name }}&quot;?')) { document.getElementById('clear-form-{{ $cat->id }}').submit(); }">
                                         🗑️
-                                    </form>
+                                    </button>
+                                </form>
                             @endif
                             @if($cat->parts_count === 0)
                                 <form action="{{ route('magazyn.category.delete', $cat->id) }}" method="POST" class="inline" id="delete-form-{{ $cat->id }}">
@@ -98,7 +128,8 @@
                                     @method('DELETE')
                                     <button type="button" class="text-red-600 hover:text-red-800 font-bold text-sm leading-none" title="Usuń kategorię" onclick="if(confirm('Czy na pewno usunąć kategorię &quot;{{ $cat->name }}&quot;?')) { document.getElementById('delete-form-{{ $cat->id }}').submit(); }">
                                         ✕
-                                    </form>
+                                    </button>
+                                </form>
                             @endif
                         </div>
                     @empty
@@ -259,10 +290,12 @@
                         <label class="block text-sm font-medium text-gray-700 whitespace-nowrap w-40">Skrócona nazwa:</label>
                         <input 
                             type="text" 
-                            name="short_name" 
+                            name="short_name"
+                            id="supplier-short-name"
                             placeholder="Skrócona nazwa (np. slajan) - zostanie ustawiona automatycznie"
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded @error('short_name') border-red-500 @enderror"
+                            class="flex-1 px-3 py-2 border-2 border-red-500 bg-red-50 rounded @error('short_name') border-red-500 @enderror"
                             autocomplete="off"
+                            required
                         >
                     </div>
                     @error('short_name')
@@ -1109,6 +1142,44 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Sprawdź czy jest komunikat sukcesu i otwórz odpowiednie sekcje
+        @if(session('success'))
+            const successMessage = @json(session('success'));
+            
+            // Jeśli dodano użytkownika lub dostawcę, pozostaw sekcję otwartą
+            if (successMessage.includes('użytkownik') || successMessage.includes('Użytkownik')) {
+                const usersContent = document.getElementById('users-content');
+                const addUserContent = document.getElementById('add-user-form-content');
+                const usersArrow = document.querySelector('[data-target="users-content"] .toggle-arrow');
+                const addUserArrow = document.querySelector('[data-target="add-user-form-content"] .toggle-arrow');
+                
+                if (usersContent) {
+                    usersContent.classList.remove('hidden');
+                    if (usersArrow) usersArrow.textContent = '▼';
+                }
+                if (addUserContent) {
+                    addUserContent.classList.remove('hidden');
+                    if (addUserArrow) addUserArrow.textContent = '▼';
+                }
+            }
+            
+            if (successMessage.includes('dostawca') || successMessage.includes('Dostawca')) {
+                const suppliersContent = document.getElementById('suppliers-content');
+                const addSupplierContent = document.getElementById('add-supplier-content');
+                const suppliersArrow = document.querySelector('[data-target="suppliers-content"] .toggle-arrow');
+                const addSupplierArrow = document.querySelector('[data-target="add-supplier-content"] .toggle-arrow');
+                
+                if (suppliersContent) {
+                    suppliersContent.classList.remove('hidden');
+                    if (suppliersArrow) suppliersArrow.textContent = '▼';
+                }
+                if (addSupplierContent) {
+                    addSupplierContent.classList.remove('hidden');
+                    if (addSupplierArrow) addSupplierArrow.textContent = '▼';
+                }
+            }
+        @endif
+
         // Obsługa rozwijania/zamykania sekcji
         document.querySelectorAll('.collapsible-btn').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
@@ -1180,6 +1251,20 @@
                         fetchNipBtn.disabled = false;
                         fetchNipBtn.textContent = 'Pobierz dane';
                     });
+            });
+        }
+        
+        // Podświetlanie skróconej nazwy dostawcy na czerwono dopóki nie jest wypełniona
+        const supplierShortNameInput = document.getElementById('supplier-short-name');
+        if (supplierShortNameInput) {
+            supplierShortNameInput.addEventListener('input', function() {
+                if (this.value.trim().length > 0) {
+                    this.classList.remove('border-red-500', 'bg-red-50');
+                    this.classList.add('border-green-500', 'bg-white');
+                } else {
+                    this.classList.remove('border-green-500', 'bg-white');
+                    this.classList.add('border-red-500', 'bg-red-50');
+                }
             });
         }
         
@@ -1296,6 +1381,36 @@
             closeSupplierModal();
         }
     });
+
+    // Edycja kategorii
+    function enableCategoryEdit(categoryId) {
+        const input = document.getElementById('category-input-' + categoryId);
+        const saveBtn = document.getElementById('save-btn-' + categoryId);
+        const cancelBtn = document.getElementById('cancel-btn-' + categoryId);
+        
+        input.removeAttribute('readonly');
+        input.classList.remove('bg-gray-100');
+        input.classList.add('bg-white', 'border-blue-500');
+        input.focus();
+        input.select();
+        
+        saveBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
+    }
+
+    function cancelCategoryEdit(categoryId, originalName) {
+        const input = document.getElementById('category-input-' + categoryId);
+        const saveBtn = document.getElementById('save-btn-' + categoryId);
+        const cancelBtn = document.getElementById('cancel-btn-' + categoryId);
+        
+        input.value = originalName;
+        input.setAttribute('readonly', 'readonly');
+        input.classList.remove('bg-white', 'border-blue-500');
+        input.classList.add('bg-gray-100');
+        
+        saveBtn.classList.add('hidden');
+        cancelBtn.classList.add('hidden');
+    }
 </script>
 
 </body>

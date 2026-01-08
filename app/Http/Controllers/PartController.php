@@ -184,6 +184,21 @@ class PartController extends Controller
         return redirect()->route('magazyn.settings')->with('success', 'Kategoria "' . $request->name . '" została dodana.');
     }
 
+    // EDYTUJ KATEGORIĘ
+    public function updateCategory(Request $request, Category $category)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+        ]);
+
+        $oldName = $category->name;
+        $category->update([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->route('magazyn.settings')->with('success', 'Kategoria "' . $oldName . '" została zmieniona na "' . $request->name . '".');
+    }
+
     // USUŃ KATEGORIĘ
     public function deleteCategory(Category $category)
     {

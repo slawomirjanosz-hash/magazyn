@@ -114,6 +114,7 @@
                                 <th class="border p-1 text-left" style="width: 100px;">Kategoria</th>
                                 <th class="border p-1 text-center" style="width: 45px;">Stan</th>
                                 <th class="border p-1 text-center" style="width: 50px;">Il. do pobr.</th>
+                                <th class="border p-1 text-left" style="width: 120px;">Projekt</th>
                                 <th class="border p-1 text-center" style="width: 60px;">Akcja</th>
                             </tr>
                         </thead>
@@ -352,6 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="border p-1 text-center">
                     <input type="number" min="1" max="${data.stockQuantity}" value="${data.quantity}" size="3" class="px-1 py-0.5 border rounded text-center text-xs product-qty" data-product-name="${name}">
                 </td>
+                <td class="border p-1">
+                    <select class="w-full px-1 py-0.5 border rounded text-xs product-project" data-product-name="${name}">
+                        <option value="">Brak projektu</option>
+                        @foreach($projects as $project)
+                            <option value="{{ $project->id }}">{{ $project->project_number }} - {{ $project->name }}</option>
+                        @endforeach
+                    </select>
+                </td>
                 <td class="border p-1 text-center">
                     <button type="button" class="bg-green-500 hover:bg-green-600 text-white px-1 py-0 rounded text-xs whitespace-nowrap fetch-product-btn" data-product-name="${name}">➖</button>
                     <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-1 py-0 rounded text-xs ml-1 remove-product-btn" data-product-name="${name}">🗑️</button>
@@ -405,11 +414,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productName = e.target.dataset.productName;
                 const qty = parseInt(selectedProducts[productName].quantity);
                 
+                // Pobierz wybrany projekt dla tego produktu
+                const projectSelect = document.querySelector(`.product-project[data-product-name="${productName}"]`);
+                const projectId = projectSelect ? projectSelect.value : '';
+                
                 const formData = new FormData();
                 formData.append('name', productName);
                 formData.append('quantity', qty);
+                if (projectId) {
+                    formData.append('project_id', projectId);
+                }
 
-                console.log('Wysyłam żądanie pobrania:', {name: productName, qty});
+                console.log('Wysyłam żądanie pobrania:', {name: productName, qty, project_id: projectId});
 
                 fetch('{{ route('parts.remove') }}', {
                     method: 'POST',
@@ -554,9 +570,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let delay = 0;
         Object.entries(selectedProducts).forEach(([name, data]) => {
             setTimeout(() => {
+                // Pobierz wybrany projekt dla tego produktu
+                const projectSelect = document.querySelector(`.product-project[data-product-name="${name}"]`);
+                const projectId = projectSelect ? projectSelect.value : '';
+                
                 const formData = new FormData();
                 formData.append('name', name);
                 formData.append('quantity', data.quantity);
+                if (projectId) {
+                    formData.append('project_id', projectId);
+                }
 
                 fetch('{{ route('parts.remove') }}', {
                     method: 'POST',
