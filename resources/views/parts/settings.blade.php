@@ -52,6 +52,23 @@
         </div>
     @endif
 
+    <!-- Sekcja: Superadmin (widoczna tylko dla proximalumine@gmail.com) -->
+    @if(auth()->user()->email === 'proximalumine@gmail.com')
+    <div class="bg-white rounded shadow mb-6">
+        <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="superadmin-content">
+            <span class="toggle-arrow text-lg">▶</span>
+            <h3 class="text-xl font-semibold text-red-700">Superadmin</h3>
+        </button>
+        <div id="superadmin-content" class="collapsible-content hidden p-6 border-t">
+            <p class="text-gray-700 mb-2">Ta sekcja jest widoczna tylko dla Superadmina.</p>
+            <div class="p-4 bg-red-50 border border-red-300 rounded">
+                <p class="font-bold text-red-700">Jesteś Superadminem! Możesz wykonywać operacje niedostępne dla innych użytkowników.</p>
+                <!-- Tu możesz dodać dowolne opcje/ustawienia dla superadmina -->
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Sekcja: Zarządzanie kategoriami (rozwijalna) -->
     @if(auth()->user()->is_admin || auth()->user()->can_settings_categories)
     <div class="bg-white rounded shadow mb-6">

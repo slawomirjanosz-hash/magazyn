@@ -68,4 +68,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/parts/preview', [PartController::class, 'preview'])->name('parts.preview')->middleware('permission:view_catalog');
     Route::post('/parts/search-similar', [PartController::class, 'searchSimilar'])->name('parts.searchSimilar')->middleware('permission:view_catalog');
     Route::post('/parts/clear-session', [PartController::class, 'clearSession'])->name('parts.clearSession');
+
+    Route::get('/magazyn/projekty', function() {
+        return view('parts.projects');
+    })->name('magazyn.projects')->middleware('auth');
 });

@@ -187,16 +187,59 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                     <h4 class="font-semibold text-sm">Katalog Produktów</h4>
                 </button>
                 <div id="catalog-content" class="collapsible-content hidden mt-4 p-4 bg-gray-50 rounded border border-gray-300">
-                    <table class="w-full border border-collapse text-xs">
+                    
+                    {{-- FILTRY --}}
+                    <div class="mb-4 flex flex-col gap-2">
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="catalog-search-input"
+                                placeholder="Szukaj po nazwie (wpisuj na żywo)"
+                                class="border p-2 flex-1 text-sm"
+                            >
+
+                            <select id="catalog-category-filter" class="border p-2 text-sm">
+                                <option value="">Wszystkie kategorie</option>
+                                @foreach($categories as $c)
+                                    <option value="{{ $c->name }}">{{ $c->name }}</option>
+                                @endforeach
+                            </select>
+
+                            <select id="catalog-supplier-filter" class="border p-2 text-sm">
+                                <option value="">Wszyscy dostawcy</option>
+                                @foreach($suppliers as $s)
+                                    <option value="{{ $s->name }}">{{ $s->short_name ?? $s->name }}</option>
+                                @endforeach
+                            </select>
+
+                            <button id="catalog-clear-filters" class="bg-gray-500 text-white px-4 py-2 rounded text-sm">
+                                Wyczyść
+                            </button>
+                        </div>
+                    </div>
+
+                    <table class="w-full border border-collapse text-xs" id="catalog-table">
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border p-2 text-center text-xs" style="width: 40px;"></th>
-                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem] cursor-pointer hover:bg-gray-200" onclick="sortTable('name')">Produkty <span class="align-middle ml-1 text-gray-400">↕</span></th>
-                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[12rem] max-w-[20rem] cursor-pointer hover:bg-gray-200" onclick="sortTable('description')">Opis <span class="align-middle ml-1 text-gray-400">↕</span></th>
-                                <th class="border p-2 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] cursor-pointer hover:bg-gray-200" onclick="sortTable('supplier')">Dostawca <span class="align-middle ml-1 text-gray-400">↕</span></th>
-                                <th class="border p-2 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] cursor-pointer hover:bg-gray-200" style="width: 100px;" onclick="sortTable('net_price')">Cena netto <span class="align-middle ml-1 text-gray-400">↕</span></th>
-                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[6.5rem] cursor-pointer hover:bg-gray-200" onclick="sortTable('category')">Kategoria <span class="align-middle ml-1 text-gray-400">↕</span></th>
-                                <th class="border p-2 text-center text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem] cursor-pointer hover:bg-gray-200" onclick="sortTable('quantity')">Stan <span class="align-middle ml-1 text-gray-400">↕</span></th>
+                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem] cursor-pointer hover:bg-gray-200 sortable" data-column="name">
+                                    Produkty <span class="sort-icon">▲</span>
+                                </th>
+                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[12rem] max-w-[20rem] cursor-pointer hover:bg-gray-200 sortable" data-column="description">
+                                    Opis <span class="sort-icon">▲</span>
+                                </th>
+                                <th class="border p-2 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] cursor-pointer hover:bg-gray-200 sortable" data-column="supplier">
+                                    Dostawca <span class="sort-icon">▲</span>
+                                </th>
+                                <th class="border p-2 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] cursor-pointer hover:bg-gray-200 sortable" style="width: 100px;" data-column="price">
+                                    Cena netto <span class="sort-icon">▲</span>
+                                </th>
+                                <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[6.5rem] cursor-pointer hover:bg-gray-200 sortable" data-column="category">
+                                    Kategoria <span class="sort-icon">▲</span>
+                                </th>
+                                <th class="border p-2 text-center text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem] cursor-pointer hover:bg-gray-200 sortable" data-column="quantity">
+                                    Stan <span class="sort-icon">▲</span>
+                                </th>
                                 <th class="border p-1 text-center text-xs whitespace-nowrap min-w-[4.5rem]" style="width: 6ch;">User</th>
                             </tr>
                         </thead>
@@ -209,7 +252,13 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                                         $supplierShort = $sup ? ($sup->short_name ?? $sup->name) : $p->supplier;
                                     }
                                 @endphp
-                                <tr>
+                                <tr data-name="{{ strtolower($p->name) }}" 
+                                    data-description="{{ strtolower($p->description ?? '') }}" 
+                                    data-supplier="{{ $p->supplier ?? '' }}" 
+                                    data-supplier-short="{{ $supplierShort }}"
+                                    data-category="{{ $p->category->name ?? '' }}"
+                                    data-price="{{ $p->net_price ?? 0 }}"
+                                    data-quantity="{{ $p->quantity }}">
                                     <td class="border p-2 text-center">
                                         <input type="checkbox" class="catalog-checkbox w-4 h-4 cursor-pointer" data-part-name="{{ $p->name }}" data-part-desc="{{ $p->description ?? '' }}" data-part-supplier="{{ $p->supplier ?? '' }}" data-part-supplier-short="{{ $supplierShort }}" data-part-price="{{ $p->net_price ?? '' }}" data-part-currency="{{ $p->currency ?? 'PLN' }}" data-part-qty="{{ $p->quantity }}>">
                                     </td>
@@ -1374,6 +1423,122 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Wystąpił błąd podczas usuwania zamówienia');
         });
     });
+    
+    // ===== FILTROWANIE I SORTOWANIE KATALOGU PRODUKTÓW =====
+    const catalogTable = document.getElementById('catalog-table');
+    const catalogSearchInput = document.getElementById('catalog-search-input');
+    const catalogCategoryFilter = document.getElementById('catalog-category-filter');
+    const catalogSupplierFilter = document.getElementById('catalog-supplier-filter');
+    const catalogClearFilters = document.getElementById('catalog-clear-filters');
+    
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    
+    // Filtrowanie na żywo
+    function filterCatalogTable() {
+        const searchTerm = catalogSearchInput.value.toLowerCase().trim();
+        const categoryValue = catalogCategoryFilter.value;
+        const supplierValue = catalogSupplierFilter.value;
+        
+        const rows = catalogTable.querySelectorAll('tbody tr[data-name]');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name') || '';
+            const category = row.getAttribute('data-category') || '';
+            const supplier = row.getAttribute('data-supplier') || '';
+            
+            const matchesSearch = !searchTerm || name.includes(searchTerm);
+            const matchesCategory = !categoryValue || category === categoryValue;
+            const matchesSupplier = !supplierValue || supplier === supplierValue;
+            
+            if (matchesSearch && matchesCategory && matchesSupplier) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Sortowanie tabeli
+    function sortCatalogTable(column) {
+        const tbody = catalogTable.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr[data-name]'));
+        
+        if (currentSortColumn === column) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortColumn = column;
+            currentSortDirection = 'asc';
+        }
+        
+        rows.sort((a, b) => {
+            let aVal, bVal;
+            
+            if (column === 'price' || column === 'quantity') {
+                aVal = parseFloat(a.getAttribute('data-' + column)) || 0;
+                bVal = parseFloat(b.getAttribute('data-' + column)) || 0;
+            } else {
+                aVal = (a.getAttribute('data-' + column) || '').toLowerCase();
+                bVal = (b.getAttribute('data-' + column) || '').toLowerCase();
+            }
+            
+            if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+            if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        rows.forEach(row => tbody.appendChild(row));
+        
+        // Aktualizuj ikony sortowania
+        catalogTable.querySelectorAll('.sortable .sort-icon').forEach(icon => {
+            icon.textContent = '▲';
+            icon.style.color = '#9CA3AF';
+        });
+        
+        const activeHeader = catalogTable.querySelector(`.sortable[data-column="${column}"] .sort-icon`);
+        if (activeHeader) {
+            activeHeader.textContent = currentSortDirection === 'asc' ? '▲' : '▼';
+            activeHeader.style.color = '#000';
+        }
+    }
+    
+    // Event listeners dla filtrów
+    if (catalogSearchInput) {
+        let searchTimeout;
+        catalogSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterCatalogTable, 300);
+        });
+    }
+    
+    if (catalogCategoryFilter) {
+        catalogCategoryFilter.addEventListener('change', filterCatalogTable);
+    }
+    
+    if (catalogSupplierFilter) {
+        catalogSupplierFilter.addEventListener('change', filterCatalogTable);
+    }
+    
+    if (catalogClearFilters) {
+        catalogClearFilters.addEventListener('click', function() {
+            if (catalogSearchInput) catalogSearchInput.value = '';
+            if (catalogCategoryFilter) catalogCategoryFilter.value = '';
+            if (catalogSupplierFilter) catalogSupplierFilter.value = '';
+            filterCatalogTable();
+        });
+    }
+    
+    // Event listeners dla sortowania kolumn
+    if (catalogTable) {
+        catalogTable.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+                sortCatalogTable(column);
+            });
+        });
+    }
     
     console.log('Orders page JavaScript initialization complete');
 });

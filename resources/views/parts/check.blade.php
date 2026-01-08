@@ -30,45 +30,32 @@
     <h2 class="text-xl font-bold mb-4">Katalog produktów</h2>
 
     {{-- FILTRY --}}
-    <form method="GET"
-          action="{{ route('magazyn.check') }}"
-          class="mb-4">
-        
+    <div class="mb-4">
         <div class="flex gap-2 mb-2">
             <input
                 type="text"
-                name="search"
-                placeholder="Szukaj po nazwie (wpisuj na żywo)"
-                value="{{ request('search') }}"
-                class="border p-2 flex-1"
                 id="search-input"
+                placeholder="Szukaj po nazwie (wpisuj na żywo)"
+                class="border p-2 flex-1"
             >
 
-            <select name="category_id" class="border p-2" id="category-filter">
+            <select id="category-filter" class="border p-2">
                 <option value="">Wszystkie kategorie</option>
                 @foreach($categories as $c)
-                    <option value="{{ $c->id }}"
-                        @selected(request('category_id') == $c->id)>
-                        {{ $c->name }}
-                    </option>
+                    <option value="{{ $c->name }}">{{ $c->name }}</option>
                 @endforeach
             </select>
 
-            <select name="supplier" class="border p-2" id="supplier-filter">
+            <select id="supplier-filter" class="border p-2">
                 <option value="">Wszyscy dostawcy</option>
                 @foreach($suppliers as $s)
-                    <option value="{{ $s->name }}"
-                        @selected(request('supplier') == $s->name)>
-                        {{ $s->short_name ?? $s->name }}
-                    </option>
+                    <option value="{{ $s->name }}">{{ $s->short_name ?? $s->name }}</option>
                 @endforeach
             </select>
 
-            @if(request('search') || request('category_id') || request('supplier'))
-                <a href="{{ route('magazyn.check') }}" class="bg-gray-500 text-white px-4 py-2 rounded">
-                    Wyczyść
-                </a>
-            @endif
+            <button id="clear-filters-btn" class="bg-gray-500 text-white px-4 py-2 rounded">
+                Wyczyść
+            </button>
         </div>
 
         <div class="flex gap-2">
@@ -95,11 +82,7 @@
                 Eksportuj CSV
             </a>
         </div>
-        
-        <input type="hidden" id="selected-ids" name="selected_ids" value="">
-        <input type="hidden" name="sort_by" id="sort-by-input" value="{{ request('sort_by') }}">
-        <input type="hidden" name="sort_dir" id="sort-dir-input" value="{{ request('sort_dir') }}">
-    </form>
+    </div>
 
     {{-- BULK ACTION BUTTONS --}}
     <div id="bulk-actions" class="mt-4 hidden flex gap-2">
@@ -127,23 +110,23 @@
                 <th class="border p-2 text-center text-xs">
                     <input type="checkbox" id="select-all" class="w-4 h-4 cursor-pointer" title="Zaznacz wszystkie">
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem]" onclick="sortTable('name')">
-                    Produkty <span class="align-middle ml-1 {{ $sortBy === 'name' ? '' : 'text-gray-400' }}">{{ $sortBy === 'name' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem] sortable" data-column="name">
+                    Produkty <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[28rem]" onclick="sortTable('description')">
-                    Opis <span class="align-middle ml-1 {{ $sortBy === 'description' ? '' : 'text-gray-400' }}">{{ $sortBy === 'description' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[16rem] max-w-[28rem] sortable" data-column="description">
+                    Opis <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem]" onclick="sortTable('supplier')">
-                    Dost. <span class="align-middle ml-1 {{ $sortBy === 'supplier' ? '' : 'text-gray-400' }}">{{ $sortBy === 'supplier' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] sortable" data-column="supplier">
+                    Dost. <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem]" onclick="sortTable('net_price')">
-                    Cena netto <span class="align-middle ml-1 {{ $sortBy === 'net_price' ? '' : 'text-gray-400' }}">{{ $sortBy === 'net_price' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[3.5rem] max-w-[6rem] sortable" data-column="price">
+                    Cena netto <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[6.5rem]" onclick="sortTable('category')">
-                    Kategoria <span class="align-middle ml-1 {{ $sortBy === 'category' ? '' : 'text-gray-400' }}">{{ $sortBy === 'category' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[6.5rem] sortable" data-column="category">
+                    Kategoria <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-2 text-center cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem]" onclick="sortTable('quantity')">
-                    Stan <span class="align-middle ml-1 {{ $sortBy === 'quantity' ? '' : 'text-gray-400' }}">{{ $sortBy === 'quantity' && $sortDir === 'desc' ? '▼' : '▲' }}</span>
+                <th class="border p-2 text-center cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap min-w-[2.5rem] max-w-[4rem] sortable" data-column="quantity">
+                    Stan <span class="sort-icon">▲</span>
                 </th>
                 <th class="border p-1 text-center text-xs whitespace-nowrap min-w-[4.5rem]" style="width: 6ch;">User</th>
                 @if(auth()->user()->show_action_column)
@@ -161,7 +144,12 @@
                         $supplierShort = $sup ? ($sup->short_name ?? $sup->name) : $p->supplier;
                     }
                 @endphp
-                <tr>
+                <tr data-name="{{ strtolower($p->name) }}"
+                    data-description="{{ strtolower($p->description ?? '') }}"
+                    data-supplier="{{ strtolower($p->supplier ?? '') }}"
+                    data-category="{{ strtolower($p->category->name ?? '') }}"
+                    data-price="{{ $p->net_price ?? 0 }}"
+                    data-quantity="{{ $p->quantity }}">
                     {{-- CHECKBOX --}}
                     <td class="border p-2 text-center">
                         <input type="checkbox" name="part_ids[]" value="{{ $p->id }}" class="part-checkbox w-4 h-4 cursor-pointer" form="bulk-delete-form">
@@ -282,59 +270,125 @@
 </div>
 
 <script>
-    function sortTable(column) {
-        const url = new URL(window.location.href);
-        const currentSort = url.searchParams.get('sort_by');
-        const currentDir = url.searchParams.get('sort_dir') || 'asc';
-        
-        if (currentSort === column) {
-            // Toggle direction
-            url.searchParams.set('sort_dir', currentDir === 'asc' ? 'desc' : 'asc');
-        } else {
-            // New column, default to asc
-            url.searchParams.set('sort_by', column);
-            url.searchParams.set('sort_dir', 'asc');
-        }
-        
-        window.location.href = url.toString();
-    }
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
     
-    (function(){
-        const form = document.querySelector('form[action="{{ route(\'magazyn.check\') }}"]');
+    function sortTable(column) {
+        const table = document.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr[data-name]'));
         
-        // Auto-submit form na zmianę kategorii
-        const categorySelect = document.getElementById('category-filter');
-        if (categorySelect) {
-            categorySelect.addEventListener('change', function() {
-                form.submit();
-            });
+        if (currentSortColumn === column) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortColumn = column;
+            currentSortDirection = 'asc';
         }
-
-        // Auto-submit form na zmianę dostawcy
-        const supplierSelect = document.getElementById('supplier-filter');
-        if (supplierSelect) {
-            supplierSelect.addEventListener('change', function() {
-                form.submit();
-            });
-        }
-
-        // Auto-submit form na zmianę w wyszukiwaniu (z debounce)
-        const searchInput = document.getElementById('search-input');
-        let searchTimeout;
-        if (searchInput) {
-            // Ustaw kursor na końcu tekstu jeśli jest wartość
-            if (searchInput.value) {
-                searchInput.focus();
-                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        
+        rows.sort((a, b) => {
+            let aVal, bVal;
+            
+            if (column === 'price' || column === 'quantity') {
+                aVal = parseFloat(a.getAttribute('data-' + column)) || 0;
+                bVal = parseFloat(b.getAttribute('data-' + column)) || 0;
+            } else {
+                aVal = (a.getAttribute('data-' + column) || '').toLowerCase();
+                bVal = (b.getAttribute('data-' + column) || '').toLowerCase();
             }
             
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    form.submit();
-                }, 300); // czeka 300ms po ostatnim znaku
+            if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+            if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        rows.forEach(row => tbody.appendChild(row));
+        
+        // Aktualizuj ikony sortowania
+        table.querySelectorAll('.sortable .sort-icon').forEach(icon => {
+            icon.textContent = '▲';
+            icon.style.color = '#9CA3AF';
+        });
+        
+        const activeHeader = table.querySelector(`.sortable[data-column="${column}"] .sort-icon`);
+        if (activeHeader) {
+            activeHeader.textContent = currentSortDirection === 'asc' ? '▲' : '▼';
+            activeHeader.style.color = '#000';
+        }
+    }
+    
+    // Event listeners dla sortowania kolumn
+    document.addEventListener('DOMContentLoaded', function() {
+        const table = document.querySelector('table');
+        if (table) {
+            table.querySelectorAll('.sortable').forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.getAttribute('data-column');
+                    sortTable(column);
+                });
             });
         }
+    });
+
+    (function(){
+        const table = document.querySelector('table');
+        const searchInput = document.getElementById('search-input');
+        const categoryFilter = document.getElementById('category-filter');
+        const supplierFilter = document.getElementById('supplier-filter');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        
+        // Funkcja filtrowania tabeli
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const categoryValue = categoryFilter.value;
+            const supplierValue = supplierFilter.value;
+            
+            const rows = table.querySelectorAll('tbody tr[data-name]');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const category = row.getAttribute('data-category') || '';
+                const supplier = row.getAttribute('data-supplier') || '';
+                
+                const matchesSearch = !searchTerm || name.includes(searchTerm);
+                const matchesCategory = !categoryValue || category === categoryValue.toLowerCase();
+                const matchesSupplier = !supplierValue || supplier === supplierValue.toLowerCase();
+                
+                if (matchesSearch && matchesCategory && matchesSupplier) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Event listeners dla filtrów
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(filterTable, 300);
+            });
+        }
+        
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', filterTable);
+        }
+        
+        if (supplierFilter) {
+            supplierFilter.addEventListener('change', filterTable);
+        }
+        
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (categoryFilter) categoryFilter.value = '';
+                if (supplierFilter) supplierFilter.value = '';
+                filterTable();
+            });
+        }
+
 
         function showAlert(type, message, timeout = 5000) {
             const container = document.getElementById('js-alert-container');

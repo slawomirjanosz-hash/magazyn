@@ -61,6 +61,13 @@
                 </a>
             @endif
 
+            @if(auth()->check())
+                <a href="{{ route('magazyn.projects') }}"
+                   class="px-3 py-2 text-sm bg-gray-200 text-black rounded whitespace-nowrap">
+                    🗂️Projekty
+                </a>
+            @endif
+
             @if(auth()->check() && auth()->user()->can_settings)
                 <a href="{{ route('magazyn.settings') }}"
                    class="px-3 py-2 text-sm bg-gray-200 text-black rounded whitespace-nowrap">
