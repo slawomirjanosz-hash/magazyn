@@ -1113,10 +1113,15 @@ class PartController extends Controller
         }
 
         // Przełącz status admina
-        $user->is_admin = 1;
-        $user->save();
-
-        return redirect()->route('magazyn.settings')->with('success', "Użytkownik \"{$user->name}\" został mianowany adminem.");
+        if ($user->is_admin) {
+            $user->is_admin = 0;
+            $user->save();
+            return redirect()->route('magazyn.settings')->with('success', "Użytkownik \"{$user->name}\" został zdegradowany do zwykłego użytkownika.");
+        } else {
+            $user->is_admin = 1;
+            $user->save();
+            return redirect()->route('magazyn.settings')->with('success', "Użytkownik \"{$user->name}\" został mianowany adminem.");
+        }
     }
 
     // DODAJ DOSTAWCĘ
