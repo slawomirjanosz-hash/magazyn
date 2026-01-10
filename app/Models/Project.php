@@ -15,10 +15,15 @@ class Project extends Model
         'budget',
         'responsible_user_id',
         'status',
+        'warranty_period',
+        'started_at',
+        'finished_at',
     ];
 
     protected $casts = [
         'budget' => 'decimal:2',
+        'started_at' => 'datetime',
+        'finished_at' => 'datetime',
     ];
 
     public function responsibleUser()

@@ -14,6 +14,13 @@ class ProjectRemoval extends Model
         'part_id',
         'user_id',
         'quantity',
+        'status',
+        'returned_at',
+        'returned_by_user_id',
+    ];
+
+    protected $casts = [
+        'returned_at' => 'datetime',
     ];
 
     public function project()
@@ -29,5 +36,10 @@ class ProjectRemoval extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function returnedBy()
+    {
+        return $this->belongsTo(User::class, 'returned_by_user_id');
     }
 }

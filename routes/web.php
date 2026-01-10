@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/magazyn/parts/bulk-delete', [PartController::class, 'bulkDelete'])->name('magazyn.parts.bulkDelete')->middleware('permission:view_catalog');
     Route::put('/magazyn/parts/{part}/update-price', [PartController::class, 'updatePrice'])->name('magazyn.parts.updatePrice')->middleware('permission:view_catalog');
     Route::put('/magazyn/parts/{part}/update', [PartController::class, 'updatePart'])->name('magazyn.parts.update')->middleware('permission:view_catalog');
+    Route::put('/magazyn/parts/{part}/update-location', [PartController::class, 'updateLocation'])->name('magazyn.parts.updateLocation')->middleware('permission:view_catalog');
     Route::post('/magazyn/zamowienia/create', [PartController::class, 'createOrder'])->name('magazyn.order.create')->middleware('permission:orders');
     Route::get('/magazyn/zamowienia/{order}/generate-word', [PartController::class, 'generateOrderWord'])->name('magazyn.order.generateWord')->middleware('permission:orders');
     Route::get('/magazyn/zamowienia/{order}/generate-pdf', [PartController::class, 'generateOrderPdf'])->name('magazyn.order.generatePdf')->middleware('permission:orders');
@@ -69,9 +70,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/parts/preview', [PartController::class, 'preview'])->name('parts.preview')->middleware('permission:view_catalog');
     Route::post('/parts/search-similar', [PartController::class, 'searchSimilar'])->name('parts.searchSimilar')->middleware('permission:view_catalog');
     Route::post('/parts/clear-session', [PartController::class, 'clearSession'])->name('parts.clearSession');
+    Route::post('/parts/delete-selected-history', [PartController::class, 'deleteSelectedHistory'])->name('parts.deleteSelectedHistory')->middleware('permission:remove');
 
     Route::get('/magazyn/projekty', [PartController::class, 'projectsView'])->name('magazyn.projects')->middleware('auth');
     Route::post('/magazyn/projekty', [PartController::class, 'storeProject'])->name('magazyn.projects.store')->middleware('auth');
     Route::get('/magazyn/projekty/{project}', [PartController::class, 'showProject'])->name('magazyn.projects.show')->middleware('auth');
+    Route::get('/magazyn/projekty/{project}/edit', [PartController::class, 'editProject'])->name('magazyn.editProject')->middleware('auth');
+    Route::put('/magazyn/projekty/{project}', [PartController::class, 'updateProject'])->name('magazyn.updateProject')->middleware('auth');
     Route::get('/magazyn/projects/{project}/removal-dates', [PartController::class, 'getRemovalDates'])->name('magazyn.projects.removal-dates')->middleware('auth');
+    Route::post('/magazyn/projekty/{project}/return/{removal}', [PartController::class, 'returnProduct'])->name('magazyn.returnProduct')->middleware('auth');
+    Route::post('/magazyn/projekty/{project}/finish', [PartController::class, 'finishProject'])->name('magazyn.finishProject')->middleware('auth');
 });

@@ -76,6 +76,16 @@
                             @endforeach
                         </select>
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Okres gwarancji (miesiące)</label>
+                        <input type="number" name="warranty_period" min="0" class="w-full px-3 py-2 border rounded" placeholder="12">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Data zakończenia projektu</label>
+                        <input type="date" name="finished_at" class="w-full px-3 py-2 border rounded">
+                    </div>
                 </div>
                 
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">

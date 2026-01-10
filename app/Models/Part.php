@@ -15,6 +15,7 @@ class Part extends Model
         'description',
         'quantity',
         'minimum_stock',
+        'location',
         'net_price',
         'currency',
         'supplier',

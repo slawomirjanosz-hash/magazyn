@@ -124,7 +124,8 @@ class PartController extends Controller
             'name' => 'required|string|max:255',
             'budget' => 'nullable|numeric|min:0',
             'responsible_user_id' => 'nullable|exists:users,id',
-            'parts_data' => 'nullable|json',
+            'warranty_period' => 'nullable|integer|min:0',
+            'finished_at' => 'nullable|date',
         ]);
 
         $project = \App\Models\Project::create([
@@ -132,6 +133,9 @@ class PartController extends Controller
             'name' => $request->name,
             'budget' => $request->budget,
             'responsible_user_id' => $request->responsible_user_id,
+            'warranty_period' => $request->warranty_period,
+            'started_at' => now(),
+            'finished_at' => $request->finished_at,
             'status' => 'in_progress',
         ]);
 
@@ -140,17 +144,92 @@ class PartController extends Controller
 
     public function showProject(\App\Models\Project $project)
     {
-        // Pobierz zgrupowane pobierania (część + user)
+        // Pobierz wszystkie pobierania (niezgrupowane) z informacją o statusie
         $removals = \App\Models\ProjectRemoval::where('project_id', $project->id)
-            ->with(['part', 'user'])
-            ->selectRaw('part_id, user_id, SUM(quantity) as total_quantity')
-            ->groupBy('part_id', 'user_id')
+            ->with(['part', 'user', 'returnedBy'])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return view('parts.project-details', [
             'project' => $project->load('responsibleUser'),
             'removals' => $removals,
         ]);
+    }
+
+    public function returnProduct(\App\Models\Project $project, \App\Models\ProjectRemoval $removal)
+    {
+        // Sprawdź, czy removal należy do projektu
+        if ($removal->project_id !== $project->id) {
+            return redirect()->back()->with('error', 'Błąd: produkt nie należy do tego projektu.');
+        }
+
+        // Sprawdź, czy produkt nie został już zwrócony
+        if ($removal->status === 'returned') {
+            return redirect()->back()->with('error', 'Ten produkt został już zwrócony.');
+        }
+
+        // Dodaj ilość z powrotem do magazynu
+        $part = $removal->part;
+        $part->quantity += $removal->quantity;
+        $part->save();
+
+        // Zaktualizuj status removal
+        $removal->status = 'returned';
+        $removal->returned_at = now();
+        $removal->returned_by_user_id = auth()->id();
+        $removal->save();
+
+        return redirect()->back()->with('success', 'Produkt został zwrócony do katalogu.');
+    }
+
+    public function finishProject(\App\Models\Project $project)
+    {
+        // Sprawdź, czy projekt jest w toku
+        if ($project->status !== 'in_progress') {
+            return redirect()->back()->with('error', 'Można zakończyć tylko projekt w toku.');
+        }
+
+        // Zaktualizuj status i datę zakończenia
+        $project->status = 'warranty';
+        $project->finished_at = now();
+        $project->save();
+
+        return redirect()->back()->with('success', 'Projekt został zakończony i przeszedł na gwarancję.');
+    }
+
+    public function editProject(\App\Models\Project $project)
+    {
+        return view('parts.project-edit', [
+            'project' => $project,
+            'users' => User::orderBy('name')->get(),
+        ]);
+    }
+
+    public function updateProject(Request $request, \App\Models\Project $project)
+    {
+        $request->validate([
+            'project_number' => 'required|string|unique:projects,project_number,' . $project->id,
+            'name' => 'required|string|max:255',
+            'budget' => 'nullable|numeric|min:0',
+            'responsible_user_id' => 'nullable|exists:users,id',
+            'warranty_period' => 'nullable|integer|min:0',
+            'started_at' => 'nullable|date',
+            'finished_at' => 'nullable|date',
+            'status' => 'required|in:in_progress,warranty,archived',
+        ]);
+
+        $project->update([
+            'project_number' => $request->project_number,
+            'name' => $request->name,
+            'budget' => $request->budget,
+            'responsible_user_id' => $request->responsible_user_id,
+            'warranty_period' => $request->warranty_period,
+            'started_at' => $request->started_at,
+            'finished_at' => $request->finished_at,
+            'status' => $request->status,
+        ]);
+
+        return redirect()->route('magazyn.projects.show', $project->id)->with('success', 'Projekt został zaktualizowany.');
     }
 
     public function getRemovalDates($projectId, Request $request)
@@ -560,6 +639,7 @@ class PartController extends Controller
             'supplier'    => 'nullable|string',
             'quantity'    => 'required|integer|min:1',
             'minimum_stock' => 'nullable|integer|min:0',
+            'location'    => 'nullable|string|max:10',
             'category_id' => 'required|exists:categories,id',
             'net_price'   => 'nullable|numeric|min:0',
             'currency'    => 'nullable|in:PLN,EUR,$',
@@ -574,12 +654,13 @@ class PartController extends Controller
                 'supplier'    => $data['supplier'] ?? null,
                 'quantity'    => 0,
                 'minimum_stock' => $data['minimum_stock'] ?? 0,
+                'location'    => $data['location'] ?? null,
                 'net_price'   => $data['net_price'] ?? null,
                 'currency'    => $data['currency'] ?? 'PLN',
             ]
         );
 
-        // aktualizacja opisu, dostawcy, ceny, waluty i kategorii (jeśli zmieniony / wpisany)
+        // aktualizacja opisu, dostawcy, ceny, waluty, lokalizacji i kategorii (jeśli zmieniony / wpisany)
         if (array_key_exists('description', $data)) {
             $part->description = $data['description'];
         }
@@ -588,6 +669,9 @@ class PartController extends Controller
         }
         if (array_key_exists('minimum_stock', $data)) {
             $part->minimum_stock = $data['minimum_stock'];
+        }
+        if (array_key_exists('location', $data)) {
+            $part->location = $data['location'];
         }
         if (array_key_exists('net_price', $data)) {
             $part->net_price = $data['net_price'];
@@ -830,6 +914,7 @@ class PartController extends Controller
             'description' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
             'minimum_stock' => 'nullable|integer|min:0',
+            'location' => 'nullable|string|max:10',
             'net_price' => 'nullable|numeric|min:0',
             'currency' => 'required|in:PLN,EUR,$',
             'supplier' => 'nullable|string|max:255',
@@ -841,6 +926,7 @@ class PartController extends Controller
             'description' => $request->description,
             'quantity' => $request->quantity,
             'minimum_stock' => $request->minimum_stock ?? 0,
+            'location' => $request->location,
             'net_price' => $request->net_price,
             'currency' => $request->currency,
             'supplier' => $request->supplier,
@@ -848,6 +934,20 @@ class PartController extends Controller
         ]);
 
         return redirect()->route('magazyn.check')->with('success', "Produkt \"{$part->name}\" został zaktualizowany.");
+    }
+
+    // AKTUALIZACJA LOKALIZACJI PRODUKTU
+    public function updateLocation(Request $request, Part $part)
+    {
+        $request->validate([
+            'location' => 'nullable|string|max:10',
+        ]);
+
+        $part->location = $request->location;
+        $part->last_modified_by = auth()->id();
+        $part->save();
+
+        return response()->json(['success' => true]);
     }
 
     // DODAWANIE UŻYTKOWNIKA
@@ -1417,6 +1517,34 @@ class PartController extends Controller
         }
         
         return redirect()->back()->with('success', $message);
+    }
+
+    public function deleteSelectedHistory(Request $request)
+    {
+        $indices = $request->input('indices', []);
+        
+        if (empty($indices)) {
+            return response()->json(['success' => false, 'message' => 'Brak zaznaczonych pozycji']);
+        }
+        
+        $sessionRemoves = session()->get('removes', []);
+        
+        // Usuń zaznaczone pozycje (w odwrotnej kolejności, żeby indeksy się nie zmieniały)
+        $indices = array_map('intval', $indices);
+        rsort($indices);
+        
+        foreach ($indices as $index) {
+            if (isset($sessionRemoves[$index])) {
+                unset($sessionRemoves[$index]);
+            }
+        }
+        
+        // Reindeksuj tablicę
+        $sessionRemoves = array_values($sessionRemoves);
+        
+        session()->put('removes', $sessionRemoves);
+        
+        return response()->json(['success' => true, 'message' => 'Usunięto zaznaczone pozycje']);
     }
 
     // ZAPIS DANYCH FIRMY

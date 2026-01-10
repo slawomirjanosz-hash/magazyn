@@ -13,9 +13,39 @@
 
 <div class="max-w-6xl mx-auto bg-white p-6 rounded shadow mt-6">
     
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold">Szczegóły projektu</h2>
-        <a href="{{ route('magazyn.projects') }}" class="text-blue-600 hover:underline">← Powrót do listy projektów</a>
+    <div class="flex justify-between items-start mb-6">
+        <div>
+            <h2 class="text-xl font-bold mb-2">Szczegóły projektu</h2>
+            <a href="{{ route('magazyn.projects') }}" class="text-blue-600 hover:underline">← Powrót do listy projektów</a>
+        </div>
+        
+        {{-- DATY W PRAWYM GÓRNYM ROGU --}}
+        <div class="text-right space-y-1">
+            @if($project->started_at)
+            <div class="text-sm">
+                <span class="font-semibold text-gray-600">Data rozpoczęcia:</span>
+                <span class="text-gray-800">{{ $project->started_at->format('d.m.Y') }}</span>
+            </div>
+            @endif
+            @if($project->finished_at)
+            <div class="text-sm">
+                <span class="font-semibold text-gray-600">Data zakończenia:</span>
+                <span class="text-gray-800">{{ $project->finished_at->format('d.m.Y') }}</span>
+            </div>
+            @endif
+            @if($project->warranty_period)
+            <div class="text-sm">
+                <span class="font-semibold text-gray-600">Okres gwarancji:</span>
+                <span class="text-gray-800">{{ $project->warranty_period }} miesięcy</span>
+            </div>
+            @endif
+            @if($project->status === 'warranty' && $project->finished_at && $project->warranty_period)
+            <div class="text-sm">
+                <span class="font-semibold text-gray-600">Data zakończenia gwarancji:</span>
+                <span class="text-gray-800">{{ $project->finished_at->addMonths($project->warranty_period)->format('d.m.Y') }}</span>
+            </div>
+            @endif
+        </div>
     </div>
     
     {{-- INFORMACJE O PROJEKCIE --}}
@@ -47,6 +77,17 @@
                 </p>
             </div>
         </div>
+        
+        <div class="mt-4 flex gap-2 justify-end">
+            <a href="{{ route('magazyn.editProject', $project->id) }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Edytuj projekt
+            </a>
+            @if($project->status === 'in_progress')
+            <button id="finish-project-btn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Zakończ projekt
+            </button>
+            @endif
+        </div>
     </div>
     
     {{-- TABELA PRODUKTÓW --}}
@@ -55,33 +96,49 @@
         <thead class="bg-gray-100">
             <tr>
                 <th class="border p-2">Nazwa produktu</th>
-                <th class="border p-2">Opis</th>
                 <th class="border p-2 text-center">Ilość</th>
+                <th class="border p-2 text-center">Data/Godzina</th>
                 <th class="border p-2 text-center">Pobrał</th>
+                <th class="border p-2 text-center">Status</th>
                 <th class="border p-2 text-center">Akcje</th>
             </tr>
         </thead>
         <tbody>
             @forelse($removals as $removal)
-                <tr>
+                <tr class="{{ $removal->status === 'returned' ? 'bg-green-50' : '' }}">
                     <td class="border p-2">{{ $removal->part->name }}</td>
-                    <td class="border p-2 text-xs text-gray-700">{{ $removal->part->description ?? '-' }}</td>
-                    <td class="border p-2 text-center">{{ $removal->total_quantity }}</td>
+                    <td class="border p-2 text-center">{{ $removal->quantity }}</td>
+                    <td class="border p-2 text-center">
+                        {{ $removal->created_at->format('d.m.Y H:i') }}
+                    </td>
                     <td class="border p-2 text-center">{{ $removal->user->short_name ?? $removal->user->name }}</td>
                     <td class="border p-2 text-center">
-                        <button class="text-blue-600 hover:underline text-xs view-dates-btn" 
-                                data-project-id="{{ $project->id }}"
-                                data-part-id="{{ $removal->part_id }}"
-                                data-user-id="{{ $removal->user_id }}"
-                                data-part-name="{{ $removal->part->name }}"
-                                data-user-name="{{ $removal->user->short_name ?? $removal->user->name }}">
-                            Podgląd
-                        </button>
+                        @if($removal->status === 'added')
+                            <span class="text-blue-600 font-semibold">Dodany</span>
+                        @else
+                            <span class="text-green-600 font-semibold">Zwrócony</span>
+                            <br>
+                            <span class="text-xs text-gray-500">{{ $removal->returned_at->format('d.m.Y H:i') }}</span>
+                            <br>
+                            <span class="text-xs text-gray-500">przez {{ $removal->returnedBy->short_name ?? $removal->returnedBy->name }}</span>
+                        @endif
+                    </td>
+                    <td class="border p-2 text-center">
+                        @if($removal->status === 'added')
+                            <form action="{{ route('magazyn.returnProduct', ['project' => $project->id, 'removal' => $removal->id]) }}" method="POST" class="inline" onsubmit="return confirm('Czy na pewno chcesz zwrócić ten produkt do katalogu?');">
+                                @csrf
+                                <button type="submit" class="text-green-600 hover:underline text-xs font-semibold">
+                                    Zwróć produkt
+                                </button>
+                            </form>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="border p-4 text-center text-gray-500">Brak pobranych produktów</td>
+                    <td colspan="6" class="border p-4 text-center text-gray-500">Brak pobranych produktów</td>
                 </tr>
             @endforelse
         </tbody>
@@ -89,57 +146,48 @@
     
 </div>
 
-{{-- MODAL PODGLĄDU DAT --}}
-<div id="dates-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-2xl w-full">
-        <h3 class="text-lg font-bold mb-4">Historia pobierań</h3>
-        <div id="dates-content">
-            <!-- Będzie wypełnione dynamicznie -->
-        </div>
-        <button id="close-modal-btn" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Zamknij</button>
+{{-- MODAL ZAKOŃCZENIA PROJEKTU --}}
+<div id="finish-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-bold mb-4">Zakończ projekt</h3>
+        <p class="mb-4 text-gray-700">Czy na pewno chcesz zakończyć ten projekt? Status projektu zmieni się na "Na gwarancji".</p>
+        <form action="{{ route('magazyn.finishProject', $project->id) }}" method="POST">
+            @csrf
+            <div class="flex gap-2 justify-end">
+                <button type="button" id="cancel-finish-btn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Anuluj
+                </button>
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Potwierdź
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    document.querySelectorAll('.view-dates-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const projectId = this.dataset.projectId;
-            const partId = this.dataset.partId;
-            const userId = this.dataset.userId;
-            const partName = this.dataset.partName;
-            const userName = this.dataset.userName;
-            
-            fetch(`/magazyn/projects/${projectId}/removal-dates?part_id=${partId}&user_id=${userId}`)
-                .then(response => response.json())
-                .then(data => {
-                    let html = `<p class="mb-3"><strong>Produkt:</strong> ${partName}<br><strong>User:</strong> ${userName}</p>`;
-                    html += '<table class="w-full border border-collapse text-xs"><thead class="bg-gray-100"><tr><th class="border p-2">Data</th><th class="border p-2">Ilość</th></tr></thead><tbody>';
-                    
-                    if (data.removals && data.removals.length > 0) {
-                        data.removals.forEach(r => {
-                            html += `<tr><td class="border p-2">${r.date}</td><td class="border p-2 text-center">${r.quantity}</td></tr>`;
-                        });
-                    } else {
-                        html += '<tr><td colspan="2" class="border p-4 text-center text-gray-500">Brak danych</td></tr>';
-                    }
-                    
-                    html += '</tbody></table>';
-                    document.getElementById('dates-content').innerHTML = html;
-                    document.getElementById('dates-modal').classList.remove('hidden');
-                });
+    const finishBtn = document.getElementById('finish-project-btn');
+    const finishModal = document.getElementById('finish-modal');
+    const cancelFinishBtn = document.getElementById('cancel-finish-btn');
+
+    if (finishBtn) {
+        finishBtn.addEventListener('click', function() {
+            finishModal.classList.remove('hidden');
         });
-    });
-    
-    document.getElementById('close-modal-btn').addEventListener('click', function() {
-        document.getElementById('dates-modal').classList.add('hidden');
-    });
-    
-    document.getElementById('dates-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
+    }
+
+    if (cancelFinishBtn) {
+        cancelFinishBtn.addEventListener('click', function() {
+            finishModal.classList.add('hidden');
+        });
+    }
+
+    if (finishModal) {
+        finishModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    }
 </script>
 
-</body>
-</html>

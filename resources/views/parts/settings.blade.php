@@ -88,12 +88,24 @@
                                 <input 
                                     type="text" 
                                     name="name" 
-                                    value="{{ $cat->name }}"
-                                    class="category-box px-2 py-0.5 bg-gray-100 rounded border border-gray-300 text-xs whitespace-nowrap"
+                                    value="{{ $cat->name }} ({{ $cat->parts_count }})"
+                                    class="category-box px-2 py-0.5 bg-gray-100 rounded border-4 border-gray-300 text-xs whitespace-nowrap w-1/3"
                                     id="category-input-{{ $cat->id }}"
                                     readonly
                                     onclick="enableCategoryEdit({{ $cat->id }})"
+                                    data-original-name="{{ $cat->name }}"
+                                    maxlength="15"
                                 >
+                                @if($cat->parts_count > 0)
+                                    <button type="button" class="text-red-600 hover:text-red-800 font-bold text-base leading-none ml-1" title="Usuń zawartość kategorii" onclick="if(confirm('Czy na pewno chcesz usunąć zawartość kategorii &quot;{{ $cat->name }}&quot;?')) { document.getElementById('clear-form-{{ $cat->id }}').submit(); }">
+                                        <span class="material-icons align-middle">delete</span>
+                                    </button>
+                                @endif
+                                @if($cat->parts_count === 0)
+                                    <button type="button" class="text-red-600 hover:text-red-800 font-bold text-base leading-none ml-1" title="Usuń kategorię" onclick="if(confirm('Czy na pewno usunąć kategorię &quot;{{ $cat->name }}&quot;?')) { document.getElementById('delete-form-{{ $cat->id }}').submit(); }">
+                                        <span class="material-icons align-middle">delete</span>
+                                    </button>
+                                @endif
                                 <button 
                                     type="submit" 
                                     class="hidden text-green-600 hover:text-green-800 font-bold text-sm" 
@@ -106,29 +118,22 @@
                                     type="button" 
                                     class="hidden text-gray-600 hover:text-gray-800 font-bold text-sm" 
                                     id="cancel-btn-{{ $cat->id }}"
-                                    onclick="cancelCategoryEdit({{ $cat->id }}, '{{ $cat->name }}')"
+                                    onclick="cancelCategoryEdit({{ $cat->id }}, '{{ $cat->name }}', {{ $cat->parts_count }})"
                                     title="Anuluj"
                                 >
                                     ✕
                                 </button>
                             </form>
-                            <span class="count-badge bg-blue-600 text-white text-xs px-1.5 py-0 rounded-full">{{ $cat->parts_count }}</span>
                             @if($cat->parts_count > 0)
-                                <form action="{{ route('magazyn.category.clearContents', $cat->id) }}" method="POST" class="inline" id="clear-form-{{ $cat->id }}">
+                                <form action="{{ route('magazyn.category.clearContents', $cat->id) }}" method="POST" class="hidden" id="clear-form-{{ $cat->id }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="button" class="text-orange-600 hover:text-orange-800 font-bold text-sm leading-none" title="Usuń zawartość kategorii" onclick="if(confirm('Czy na pewno chcesz usunąć zawartość kategorii &quot;{{ $cat->name }}&quot;?')) { document.getElementById('clear-form-{{ $cat->id }}').submit(); }">
-                                        🗑️
-                                    </button>
                                 </form>
                             @endif
                             @if($cat->parts_count === 0)
-                                <form action="{{ route('magazyn.category.delete', $cat->id) }}" method="POST" class="inline" id="delete-form-{{ $cat->id }}">
+                                <form action="{{ route('magazyn.category.delete', $cat->id) }}" method="POST" class="hidden" id="delete-form-{{ $cat->id }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="button" class="text-red-600 hover:text-red-800 font-bold text-sm leading-none" title="Usuń kategorię" onclick="if(confirm('Czy na pewno usunąć kategorię &quot;{{ $cat->name }}&quot;?')) { document.getElementById('delete-form-{{ $cat->id }}').submit(); }">
-                                        ✕
-                                    </button>
                                 </form>
                             @endif
                         </div>
@@ -147,6 +152,7 @@
                         name="name" 
                         placeholder="Nazwa kategorii" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded"
+                        maxlength="15"
                         required
                     >
                     <button 
@@ -1388,6 +1394,10 @@
         const saveBtn = document.getElementById('save-btn-' + categoryId);
         const cancelBtn = document.getElementById('cancel-btn-' + categoryId);
         
+        // Usuń licznik z wartości
+        const originalName = input.dataset.originalName;
+        input.value = originalName;
+        
         input.removeAttribute('readonly');
         input.classList.remove('bg-gray-100');
         input.classList.add('bg-white', 'border-blue-500');
@@ -1398,12 +1408,12 @@
         cancelBtn.classList.remove('hidden');
     }
 
-    function cancelCategoryEdit(categoryId, originalName) {
+    function cancelCategoryEdit(categoryId, originalName, count) {
         const input = document.getElementById('category-input-' + categoryId);
         const saveBtn = document.getElementById('save-btn-' + categoryId);
         const cancelBtn = document.getElementById('cancel-btn-' + categoryId);
         
-        input.value = originalName;
+        input.value = originalName + ' (' + count + ')';
         input.setAttribute('readonly', 'readonly');
         input.classList.remove('bg-white', 'border-blue-500');
         input.classList.add('bg-gray-100');
@@ -1413,5 +1423,7 @@
     }
 </script>
 
+<!-- Ikony Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </body>
 </html>

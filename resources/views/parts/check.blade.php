@@ -135,7 +135,7 @@
                 <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="supplier" style="width: 4rem;">
                     Dost. <span class="sort-icon">▲</span>
                 </th>
-                <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="price" style="width: 5rem;">
+                <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="price" style="width: 7rem;">
                     Cena <span class="sort-icon">▲</span>
                 </th>
                 <th class="border p-1 cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="category" style="width: 6rem;">
@@ -147,9 +147,12 @@
                 <th class="border p-1 text-center text-xs whitespace-nowrap" style="width: 3rem;">
                     Min
                 </th>
+                <th class="border p-1 text-center cursor-pointer hover:bg-gray-200 text-xs whitespace-nowrap sortable" data-column="location" style="width: 7rem;">
+                    Lok. <span class="sort-icon">▲</span>
+                </th>
                 <th class="border p-1 text-center text-xs whitespace-nowrap" style="width: 4ch;">User</th>
                 @if(auth()->user()->show_action_column)
-                    <th class="border p-2 text-center text-xs whitespace-nowrap min-w-[5.5rem]">Akcja</th>
+                    <th class="border p-1 text-center text-xs whitespace-nowrap" style="width: 3.5rem;">Akcja</th>
                 @endif
             </tr>
         </thead>
@@ -213,6 +216,16 @@
                         {{ $p->minimum_stock }}
                     </td>
 
+                    {{-- LOKALIZACJA --}}
+                    <td class="border p-2 text-center text-xs">
+                        <input type="text" 
+                               class="location-input w-full text-center border-0 bg-transparent focus:border focus:border-blue-500 focus:bg-white p-1"
+                               value="{{ $p->location ?? '' }}"
+                               data-part-id="{{ $p->id }}"
+                               maxlength="10"
+                               placeholder="-">
+                    </td>
+
                     {{-- UŻYTKOWNIK --}}
                     <td class="border p-2 text-center text-xs text-gray-600">
                         {{ $p->lastModifiedBy ? $p->lastModifiedBy->short_name : '-' }}
@@ -220,9 +233,8 @@
 
                     {{-- AKCJE --}}
                     @if(auth()->user()->show_action_column)
-                        <td class="border p-1">
-                            <div class="flex items-center justify-center gap-1">
-
+                        <td class="border p-0.5">
+                            <div class="grid grid-cols-2 gap-0.5">
                                 {{-- ➕ --}}
                                 <form method="POST" action="{{ route('parts.add') }}">
                                     @csrf
@@ -233,7 +245,7 @@
                                     <input type="hidden" name="search" value="{{ request('search') }}">
                                     <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
 
-                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
+                                    <button class="bg-gray-200 hover:bg-gray-300 px-1 py-0.5 rounded text-xs w-full">
                                         ➕
                                     </button>
                                 </form>
@@ -247,23 +259,27 @@
                                     <input type="hidden" name="search" value="{{ request('search') }}">
                                     <input type="hidden" name="filter_category_id" value="{{ request('category_id') }}">
 
-                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
+                                    <button class="bg-gray-200 hover:bg-gray-300 px-1 py-0.5 rounded text-xs w-full">
                                         ➖
                                     </button>
                                 </form>
 
-                                {{-- ✏️ EDYCJA --}}
-                                <button class="bg-blue-100 hover:bg-blue-200 px-1 py-0.5 rounded text-xs edit-part-btn" 
-                                        data-part-id="{{ $p->id }}"
-                                        data-part-name="{{ $p->name }}"
-                                        data-part-description="{{ $p->description ?? '' }}"
-                                        data-part-quantity="{{ $p->quantity }}"
-                                        data-part-minimum-stock="{{ $p->minimum_stock }}"
-                                        data-part-price="{{ $p->net_price }}"
-                                        data-part-currency="{{ $p->currency }}"
-                                        data-part-supplier="{{ $p->supplier ?? '' }}"
-                                        data-part-category-id="{{ $p->category_id }}"
-                                        title="Edytuj produkt">
+
+
+                                {{-- ✏️ EDYCJA (NEW) --}}
+                                <button type="button"
+                                    class="bg-blue-100 hover:bg-blue-200 px-1 py-0.5 rounded text-xs w-full edit-part-btn"
+                                    data-part-id="{{ $p->id }}"
+                                    data-part-name="{{ $p->name }}"
+                                    data-part-description="{{ $p->description ?? '' }}"
+                                    data-part-quantity="{{ $p->quantity }}"
+                                    data-part-minimum-stock="{{ $p->minimum_stock ?? 0 }}"
+                                    data-part-location="{{ $p->location ?? '' }}"
+                                    data-part-price="{{ $p->net_price ?? '' }}"
+                                    data-part-currency="{{ $p->currency ?? 'PLN' }}"
+                                    data-part-supplier="{{ $p->supplier ?? '' }}"
+                                    data-part-category-id="{{ $p->category_id }}"
+                                    title="Edytuj produkt">
                                     ✏️
                                 </button>
 
@@ -274,11 +290,124 @@
                                     @csrf
                                     @method('DELETE')
 
-                                    <button class="bg-gray-200 px-1 py-0.5 rounded text-xs">
+                                    <button class="bg-gray-200 hover:bg-gray-300 px-1 py-0.5 rounded text-xs w-full">
                                         ❌
                                     </button>
                                 </form>
+                            </div>
 
+                            <!-- Modal container for edit form -->
+                            <div id="edit-modal-container"></div>
+
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const categoriesData = @json($categories);
+                                const suppliersData = @json($suppliers);
+                                // Attach event listener to all edit buttons
+                                document.body.addEventListener('click', function(e) {
+                                    if (e.target.classList.contains('edit-part-btn')) {
+                                        const btn = e.target;
+                                        showEditModal(btn);
+                                    }
+                                });
+
+                                function showEditModal(btn) {
+                                    // Get part data from button
+                                    const partId = btn.getAttribute('data-part-id');
+                                    const partName = btn.getAttribute('data-part-name');
+                                    const partDescription = btn.getAttribute('data-part-description') || '';
+                                    const partQuantity = btn.getAttribute('data-part-quantity') || 0;
+                                    const partMinimumStock = btn.getAttribute('data-part-minimum-stock') || 0;
+                                    const partLocation = btn.getAttribute('data-part-location') || '';
+                                    const partPrice = btn.getAttribute('data-part-price') || '';
+                                    const partCurrency = btn.getAttribute('data-part-currency') || 'PLN';
+                                    const partSupplier = btn.getAttribute('data-part-supplier') || '';
+                                    const partCategoryId = btn.getAttribute('data-part-category-id');
+
+                                    // Build options
+                                    const categoriesOptions = categoriesData.map(cat => 
+                                        `<option value="${cat.id}" ${cat.id == partCategoryId ? 'selected' : ''}>${cat.name}</option>`
+                                    ).join('');
+                                    const suppliersOptions = '<option value="">Brak</option>' + suppliersData.map(sup => 
+                                        `<option value="${sup.name}" ${sup.name === partSupplier ? 'selected' : ''}>${sup.name}</option>`
+                                    ).join('');
+
+                                    // Modal HTML
+                                    const modalHtml = `
+                                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="edit-modal-bg">
+                                        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4 relative">
+                                            <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" id="close-edit-modal">&times;</button>
+                                            <h3 class="text-xl font-bold mb-4">Edycja produktu: ${partName}</h3>
+                                            <form action="/magazyn/parts/${partId}/update" method="POST">
+                                                <input type="hidden" name="_token" value="${document.querySelector('meta[name=csrf-token]')?.content || ''}">
+                                                <input type="hidden" name="_method" value="PUT">
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <div class="col-span-2">
+                                                        <label class="block text-sm font-medium mb-2">Nazwa produktu *</label>
+                                                        <input type="text" name="name" value="${partName}" required class="w-full px-3 py-2 border rounded">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Kategoria *</label>
+                                                        <select name="category_id" required class="w-full px-3 py-2 border rounded">
+                                                            ${categoriesOptions}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Ilość *</label>
+                                                        <input type="number" name="quantity" value="${partQuantity}" min="0" required class="w-full px-3 py-2 border rounded">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Stan minimalny</label>
+                                                        <input type="number" name="minimum_stock" value="${partMinimumStock}" min="0" class="w-full px-3 py-2 border rounded" placeholder="0">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Lokalizacja</label>
+                                                        <input type="text" name="location" value="${partLocation}" maxlength="10" class="w-full px-3 py-2 border rounded" placeholder="np. A1, B2">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Cena netto</label>
+                                                        <input type="number" name="net_price" step="0.01" min="0" value="${partPrice}" class="w-full px-3 py-2 border rounded" placeholder="0.00">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium mb-2">Waluta *</label>
+                                                        <select name="currency" required class="w-full px-3 py-2 border rounded">
+                                                            <option value="PLN" ${partCurrency === 'PLN' ? 'selected' : ''}>PLN</option>
+                                                            <option value="EUR" ${partCurrency === 'EUR' ? 'selected' : ''}>EUR</option>
+                                                            <option value="$" ${partCurrency === '$' ? 'selected' : ''}>$</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-span-2">
+                                                        <label class="block text-sm font-medium mb-2">Dostawca</label>
+                                                        <select name="supplier" class="w-full px-3 py-2 border rounded">
+                                                            ${suppliersOptions}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-span-2">
+                                                        <label class="block text-sm font-medium mb-2">Opis</label>
+                                                        <textarea name="description" rows="3" class="w-full px-3 py-2 border rounded" placeholder="Opcjonalny opis produktu">${partDescription}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-2 mt-6">
+                                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">💾 Zapisz zmiany</button>
+                                                    <button type="button" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500" id="cancel-edit-modal">Anuluj</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>`;
+                                    document.getElementById('edit-modal-container').innerHTML = modalHtml;
+
+                                    // Close modal logic
+                                    document.getElementById('close-edit-modal').onclick = closeEditModal;
+                                    document.getElementById('cancel-edit-modal').onclick = closeEditModal;
+                                    document.getElementById('edit-modal-bg').onclick = function(e) {
+                                        if (e.target === this) closeEditModal();
+                                    };
+                                }
+                                function closeEditModal() {
+                                    document.getElementById('edit-modal-container').innerHTML = '';
+                                }
+                            });
+                            </script>
                             </div>
                         </td>
                     @endif
@@ -640,114 +769,47 @@
         attachDownloaderWithSelected('btn-download-word', 'katalog.docx', 'eksport-word');
     })();
 
-    // Modal edycji produktu
-    const editButtons = document.querySelectorAll('.edit-part-btn');
-    const categories = @json($categories);
-    const suppliers = @json($suppliers);
-    
-    editButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+
+
+    // OBSŁUGA LOKALIZACJI - ZAPIS PO UTRACIE FOCUSA
+    document.querySelectorAll('.location-input').forEach(input => {
+        let originalValue = input.value;
+        
+        input.addEventListener('focus', function() {
+            originalValue = this.value;
+        });
+        
+        input.addEventListener('blur', function() {
+            const newValue = this.value.trim();
             const partId = this.dataset.partId;
-            const partName = this.dataset.partName;
-            const partDescription = this.dataset.partDescription || '';
-            const partQuantity = this.dataset.partQuantity || 0;
-            const partMinimumStock = this.dataset.partMinimumStock || 0;
-            const partPrice = this.dataset.partPrice || '';
-            const partCurrency = this.dataset.partCurrency || 'PLN';
-            const partSupplier = this.dataset.partSupplier || '';
-            const partCategoryId = this.dataset.partCategoryId;
-
-            const categoriesOptions = categories.map(cat => 
-                `<option value="${cat.id}" ${cat.id == partCategoryId ? 'selected' : ''}>${cat.name}</option>`
-            ).join('');
             
-            const suppliersOptions = '<option value="">Brak</option>' + suppliers.map(sup => 
-                `<option value="${sup.name}" ${sup.name === partSupplier ? 'selected' : ''}>${sup.name}</option>`
-            ).join('');
-
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            modal.innerHTML = `
-                <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 class="text-xl font-bold mb-4">Edycja produktu</h3>
-                    <form action="/magazyn/parts/${partId}/update" method="POST">
-                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content || ''}">
-                        <input type="hidden" name="_method" value="PUT">
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="col-span-2">
-                                <label class="block text-sm font-medium mb-2">Nazwa produktu *</label>
-                                <input type="text" name="name" value="${partName}" required
-                                       class="w-full px-3 py-2 border rounded">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Kategoria *</label>
-                                <select name="category_id" required class="w-full px-3 py-2 border rounded">
-                                    ${categoriesOptions}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Ilość *</label>
-                                <input type="number" name="quantity" value="${partQuantity}" min="0" required
-                                       class="w-full px-3 py-2 border rounded">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Stan minimalny</label>
-                                <input type="number" name="minimum_stock" value="${partMinimumStock}" min="0"
-                                       class="w-full px-3 py-2 border rounded" placeholder="0">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Cena netto</label>
-                                <input type="number" name="net_price" step="0.01" min="0" value="${partPrice}" 
-                                       class="w-full px-3 py-2 border rounded" placeholder="Opcjonalne">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Waluta *</label>
-                                <select name="currency" required class="w-full px-3 py-2 border rounded">
-                                    <option value="PLN" ${partCurrency === 'PLN' ? 'selected' : ''}>PLN</option>
-                                    <option value="EUR" ${partCurrency === 'EUR' ? 'selected' : ''}>EUR</option>
-                                    <option value="$" ${partCurrency === '$' ? 'selected' : ''}>$</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-span-2">
-                                <label class="block text-sm font-medium mb-2">Dostawca</label>
-                                <select name="supplier" class="w-full px-3 py-2 border rounded">
-                                    ${suppliersOptions}
-                                </select>
-                            </div>
-                            
-                            <div class="col-span-2">
-                                <label class="block text-sm font-medium mb-2">Opis</label>
-                                <textarea name="description" rows="3" class="w-full px-3 py-2 border rounded" placeholder="Opcjonalne">${partDescription}</textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-2 mt-6">
-                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Zapisz zmiany</button>
-                            <button type="button" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 close-modal">Anuluj</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            modal.querySelector('.close-modal').addEventListener('click', () => {
-                modal.remove();
-            });
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
+            if (newValue !== originalValue) {
+                fetch(`/magazyn/parts/${partId}/update-location`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ location: newValue })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        originalValue = newValue;
+                        this.classList.add('bg-green-100');
+                        setTimeout(() => {
+                            this.classList.remove('bg-green-100');
+                        }, 500);
+                    } else {
+                        alert('Błąd podczas aktualizacji lokalizacji');
+                        this.value = originalValue;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Błąd podczas aktualizacji lokalizacji');
+                    this.value = originalValue;
+                });
+            }
         });
     });
-</script>
-</body>
-</html>

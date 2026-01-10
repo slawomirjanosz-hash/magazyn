@@ -121,8 +121,17 @@
                         <tbody>
                         </tbody>
                     </table>
-                    <button type="button" id="remove-all-selected-btn-inner" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs mr-2">🗑️ Wyczyść listę</button>
-                    <button type="button" id="fetch-all-btn-inner" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">✅ Pobierz wszystkie</button>
+                    <div class="flex items-center gap-2 mt-4">
+                        <button type="button" id="remove-all-selected-btn-inner" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">🗑️ Wyczyść listę</button>
+                        <select id="project-for-all" class="border p-1 rounded text-xs" style="width: 200px;">
+                            <option value="">Projekt dla wszystkich</option>
+                            @foreach($projects ?? [] as $proj)
+                                <option value="{{ $proj->id }}">{{ $proj->project_number }} - {{ $proj->name }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" id="apply-project-to-all" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">Zastosuj</button>
+                        <button type="button" id="fetch-all-btn-inner" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs ml-auto">✅ Pobierz wszystkie</button>
+                    </div>
                 </div>
             </div>
 
@@ -189,16 +198,15 @@
             </button>
             <div id="history-content" class="collapsible-content hidden p-6 border-t">
                 <div class="flex items-center justify-between mb-2">
-                    <form method="POST" action="{{ route('parts.clearSession') }}" style="display: inline;" onsubmit="return confirm('Czy na pewno wyczyścić historię sesji?');">
-                        @csrf
-                        <input type="hidden" name="type" value="removes">
-                        <button type="submit" class="bg-purple-300 hover:bg-purple-400 text-white px-3 py-1 rounded text-sm">🗑️ Wyczyść historię</button>
-                    </form>
+                    <button type="button" id="delete-selected-history" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">🗑️ Usuń zaznaczone</button>
                 </div>
 
                 <table class="w-full border border-collapse text-xs">
             <thead class="bg-gray-100">
                 <tr>
+                    <th class="border p-2 text-center">
+                        <input type="checkbox" id="select-all-history" class="w-4 h-4 cursor-pointer">
+                    </th>
                     <th class="border p-2 text-left">Produkt</th>
                     <th class="border p-2 text-left">Opis</th>
                     <th class="border p-2 text-left" style="width: 80px;">Dostawca</th>
@@ -208,8 +216,11 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($sessionRemoves as $r)
+                @foreach($sessionRemoves as $index => $r)
                     <tr>
+                        <td class="border p-2 text-center">
+                            <input type="checkbox" class="history-checkbox w-4 h-4 cursor-pointer" data-index="{{ $index }}">
+                        </td>
                         <td class="border p-2">
                             {{ $r['name'] ?? '-' }}
                         </td>
@@ -280,7 +291,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // � OTWÓRZ KATALOG JEŚLI BYŁ ZAPAMIĘTANY
+    // Historia pobrań - obsługa checkboxów i usuwania
+    const selectAllHistoryCheckbox = document.getElementById('select-all-history');
+    const deleteSelectedHistoryBtn = document.getElementById('delete-selected-history');
+    
+    if (selectAllHistoryCheckbox) {
+        selectAllHistoryCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.history-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    }
+    
+    if (deleteSelectedHistoryBtn) {
+        deleteSelectedHistoryBtn.addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.history-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('Nie zaznaczono żadnych pozycji');
+                return;
+            }
+            
+            if (!confirm(`Czy na pewno usunąć ${checkboxes.length} zaznaczonych pozycji z historii?`)) {
+                return;
+            }
+            
+            const indices = Array.from(checkboxes).map(cb => cb.dataset.index);
+            
+            fetch('{{ route('parts.deleteSelectedHistory') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ indices: indices })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Usuń zaznaczone wiersze z tabeli bez przeładowania strony
+                    checkboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row) row.remove();
+                    });
+                    // Odznacz checkbox "Zaznacz wszystkie"
+                    if (selectAllHistoryCheckbox) {
+                        selectAllHistoryCheckbox.checked = false;
+                    }
+                } else {
+                    alert('Błąd podczas usuwania pozycji');
+                }
+            })
+            .catch(err => {
+                console.error('Błąd:', err);
+                alert('Błąd podczas usuwania pozycji');
+            });
+        });
+    }
+
+    // ❌ OTWÓRZ KATALOG JEŚLI BYŁ ZAPAMIĘTANY
     if (localStorage.getItem('katalogOtwarty') === 'true') {
         const catalogBtn = document.querySelector('[data-target="catalog-content"]');
         const catalogContent = document.getElementById('catalog-content');
@@ -322,7 +391,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchAllBtn = document.getElementById('fetch-all-btn-inner');
     const selectAllRemoveCheckbox = document.getElementById('select-all-remove-products');
     const selectAllCatalogRemoveCheckbox = document.getElementById('select-all-catalog-remove');
+    const applyProjectToAllBtn = document.getElementById('apply-project-to-all');
+    const projectForAllSelect = document.getElementById('project-for-all');
     let selectedProducts = {};
+
+    // Event listener dla przycisku "Zastosuj" - projekt dla wszystkich produktów
+    if (applyProjectToAllBtn && projectForAllSelect) {
+        applyProjectToAllBtn.addEventListener('click', function() {
+            const projectId = projectForAllSelect.value;
+            if (!projectId) {
+                alert('Wybierz projekt');
+                return;
+            }
+
+            // Ustaw projekt dla wszystkich produktów w tabeli
+            const projectSelects = selectedProductsTable.querySelectorAll('.product-project');
+            projectSelects.forEach(select => {
+                select.value = projectId;
+                
+                // Zaktualizuj również selectedProducts
+                const row = select.closest('tr');
+                const productNameCell = row.querySelector('td:nth-child(2)');
+                const productName = productNameCell ? productNameCell.textContent.trim() : null;
+                if (productName && selectedProducts[productName]) {
+                    selectedProducts[productName].projectId = projectId;
+                }
+            });
+        });
+    }
 
     // Globalny checkbox "Zaznacz wszystkie" w katalogu produktów
     if (selectAllCatalogRemoveCheckbox) {
@@ -362,8 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </td>
                 <td class="border p-1 text-center">
-                    <button type="button" class="bg-green-500 hover:bg-green-600 text-white px-1 py-0 rounded text-xs whitespace-nowrap fetch-product-btn" data-product-name="${name}">➖</button>
-                    <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-1 py-0 rounded text-xs ml-1 remove-product-btn" data-product-name="${name}">🗑️</button>
+                    <div class="flex justify-center gap-1">
+                        <button type="button" class="bg-green-500 hover:bg-green-600 text-white px-1 py-0 rounded text-xs whitespace-nowrap fetch-product-btn" data-product-name="${name}">➖</button>
+                        <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-1 py-0 rounded text-xs remove-product-btn" data-product-name="${name}">🗑️</button>
+                    </div>
                 </td>
             `;
             selectedProductsTable.appendChild(row);
@@ -442,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             throw new Error(err.message || 'Błąd podczas pobierania');
                         });
                     }
-                    return response.json;
+                    return response.json();
                 })
                 .then((data) => {
                     console.log('Odpowiedź serwera:', data);

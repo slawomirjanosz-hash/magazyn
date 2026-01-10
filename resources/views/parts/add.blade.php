@@ -26,6 +26,7 @@
                 @csrf
                 {{-- NAZWA --}}
                 <div>
+                    <label class="block text-sm font-semibold mb-1">Nazwa produktu *</label>
                     <input
                         id="part-name"
                         name="name"
@@ -36,6 +37,7 @@
                 </div>
                 {{-- OPIS --}}
                 <div>
+                    <label class="block text-sm font-semibold mb-1">Opis</label>
                     <input
                         id="part-description"
                         name="description"
@@ -43,68 +45,99 @@
                         class="border p-2 rounded w-full"
                     >
                 </div>
-                {{-- ILOŚĆ, STAN MIN., CENA, WALUTA --}}
+                {{-- ILOŚĆ, STAN MIN., LOKALIZACJA --}}
                 <div class="flex gap-2">
-                    <input
-                        name="quantity"
-                        type="number"
-                        min="1"
-                        value="1"
-                        class="border p-2 rounded w-24"
-                        required
-                        placeholder="Ilość"
-                    >
-                    <input
-                        name="minimum_stock"
-                        type="number"
-                        min="0"
-                        value="0"
-                        class="border p-2 rounded w-24"
-                        placeholder="Stan min."
-                        title="Stan minimalny"
-                    >
-                    <input
-                        id="part-net-price"
-                        name="net_price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Cena netto"
-                        class="border p-2 rounded w-32"
-                    >
-                    <select
-                        id="part-currency"
-                        name="currency"
-                        class="border p-2 rounded text-sm w-24"
-                    >
-                        <option value="PLN">PLN</option>
-                        <option value="EUR">EUR</option>
-                        <option value="$">$</option>
-                    </select>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold mb-1">Ilość *</label>
+                        <input
+                            name="quantity"
+                            type="number"
+                            min="1"
+                            value="1"
+                            class="border p-2 rounded w-full"
+                            required
+                            placeholder="Ilość"
+                        >
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold mb-1">Stan min.</label>
+                        <input
+                            name="minimum_stock"
+                            type="number"
+                            min="0"
+                            value="0"
+                            class="border p-2 rounded w-full"
+                            placeholder="Stan min."
+                            title="Stan minimalny"
+                        >
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold mb-1">Lokalizacja</label>
+                        <input
+                            name="location"
+                            type="text"
+                            maxlength="10"
+                            class="border p-2 rounded w-full"
+                            placeholder="np. A1, B2"
+                        >
+                    </div>
+                </div>
+                {{-- CENA I WALUTA --}}
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold mb-1">Cena netto</label>
+                        <input
+                            id="part-net-price"
+                            name="net_price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Cena netto"
+                            class="border p-2 rounded w-full"
+                        >
+                    </div>
+                    <div style="width: 100px;">
+                        <label class="block text-sm font-semibold mb-1">Waluta</label>
+                        <select
+                            id="part-currency"
+                            name="currency"
+                            class="border p-2 rounded text-sm w-full"
+                        >
+                            <option value="PLN">PLN</option>
+                            <option value="EUR">EUR</option>
+                            <option value="$">$</option>
+                        </select>
+                    </div>
                 </div>
                 {{-- DOSTAWCA, KATEGORIA --}}
                 <div class="flex gap-2">
-                    <select
-                        id="part-supplier"
-                        name="supplier"
-                        class="border p-2 rounded text-sm flex-1"
-                    >
-                        <option value="">- wybierz dostawcę -</option>
-                        @foreach($suppliers as $s)
-                            <option value="{{ $s->name }}">{{ $s->short_name ?? $s->name }}</option>
-                        @endforeach
-                    </select>
-                    <select
-                        name="category_id"
-                        class="border p-2 rounded flex-1"
-                        required
-                    >
-                        @foreach($categories as $c)
-                            <option value="{{ $c->id }}">
-                                {{ $c->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div style="width: 200px;">
+                        <label class="block text-sm font-semibold mb-1">Dostawca</label>
+                        <select
+                            id="part-supplier"
+                            name="supplier"
+                            class="border p-2 rounded text-sm w-full"
+                        >
+                            <option value="">- wybierz -</option>
+                            @foreach($suppliers as $s)
+                                <option value="{{ $s->name }}">{{ $s->short_name ?? $s->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div style="width: 200px;">
+                        <label class="block text-sm font-semibold mb-1">Kategoria *</label>
+                        <select
+                            name="category_id"
+                            class="border p-2 rounded w-full"
+                            required
+                        >
+                            @foreach($categories as $c)
+                                <option value="{{ $c->id }}">
+                                    {{ $c->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 {{-- PRZYCISK --}}
                 <button

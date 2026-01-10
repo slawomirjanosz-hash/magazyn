@@ -113,11 +113,11 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                             <tr>
                                 <th class="border p-1 text-center" style="width: 25px;"></th>
                                 <th class="border p-1 text-left" style="white-space: nowrap;">Produkt</th>
-                                <th class="border p-1 text-left" style="max-width: 150px;">Opis</th>
-                                <th class="border p-1 text-center" style="width: 80px;">Dostawca</th>
-                                <th class="border p-1 text-center" style="width: 70px;">Cena</th>
+                                <th class="border p-1 text-left" style="max-width: 120px;">Opis</th>
+                                <th class="border p-1 text-center" style="width: 90px;">Dostawca</th>
+                                <th class="border p-1 text-center" style="width: 9rem;">Cena</th>
                                 <th class="border p-1 text-center" style="width: 35px;">Stan</th>
-                                <th class="border p-1 text-center" style="width: 40px;">Il.</th>
+                                <th class="border p-1 text-center" style="width: 50px;">Il.</th>
                                 <th class="border p-1 text-center" style="width: 45px;">Akcja</th>
                             </tr>
                         </thead>
@@ -218,10 +218,11 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                         </div>
                     </div>
 
-                    <table class="w-full border border-collapse text-xs" id="catalog-table">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="border p-2 text-center text-xs" style="width: 40px;"></th>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-collapse text-xs" id="catalog-table">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="border p-2 text-center text-xs" style="width: 40px;"></th>
                                 <th class="border p-2 text-left text-xs whitespace-nowrap min-w-[16rem] max-w-[24rem] cursor-pointer hover:bg-gray-200 sortable" data-column="name">
                                     Produkty <span class="sort-icon">▲</span>
                                 </th>
@@ -283,6 +284,7 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                             @endforelse
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -528,16 +530,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="checkbox" checked class="w-4 h-4 cursor-pointer selected-product-checkbox" data-product-name="${name}">
                 </td>
                 <td class="border p-1">${name}</td>
-                <td class="border p-1 text-xs text-gray-600" style="max-width: 150px; word-wrap: break-word;">${data.description || ''}</td>
+                <td class="border p-1 text-xs text-gray-600" style="max-width: 120px; word-wrap: break-word;">${data.description || ''}</td>
                 <td class="border p-1">
-                    <select class="w-16 px-1 py-0.5 border rounded text-xs product-supplier" data-product-name="${name}">
+                    <select class="w-20 px-1 py-0.5 border rounded text-xs product-supplier" data-product-name="${name}">
                         ${supplierOptions}
                     </select>
                 </td>
                 <td class="border p-1 text-center">
                     <div class="flex items-center gap-1 justify-center">
                         <input type="text" value="${data.price || ''}" maxlength="9" class="w-16 px-1 py-0.5 border rounded text-xs text-center product-price" data-product-name="${name}" placeholder="0.00">
-                        <select class="w-12 px-1 py-0.5 border rounded text-xs product-currency" data-product-name="${name}">
+                        <select class="w-14 px-1 py-0.5 border rounded text-xs product-currency" data-product-name="${name}">
                             <option value="PLN" ${data.currency === 'PLN' ? 'selected' : ''}>PLN</option>
                             <option value="EUR" ${data.currency === 'EUR' ? 'selected' : ''}>EUR</option>
                             <option value="USD" ${data.currency === 'USD' ? 'selected' : ''}>USD</option>
@@ -546,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td class="border p-1 text-center ${stockClass}">${data.stockQuantity}</td>
                 <td class="border p-1 text-center">
-                    <input type="number" min="1" value="${data.orderQuantity}" size="3" class="px-1 py-0.5 border rounded text-center text-xs order-quantity-input" data-product-name="${name}">
+                    <input type="number" min="1" max="9999" value="${data.orderQuantity}" class="px-1 py-0.5 border rounded text-center text-xs order-quantity-input" data-product-name="${name}" style="width: 40px;">
                 </td>
                 <td class="border p-1 text-center">
                     <button class="bg-red-500 hover:bg-red-600 text-white px-1 py-0 rounded text-xs remove-product-btn" data-product-name="${name}">🗑️</button>
@@ -729,6 +731,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Pokaż zielony pasek z komunikatem
                 const orderCount = data.orders ? data.orders.length : 1;
                 showNotification(`Wygenerowano ${orderCount} ${orderCount === 1 ? 'zamówienie' : (orderCount < 5 ? 'zamówienia' : 'zamówień')}`, 'success');
+                
+                // Wyczyść listę produktów do zamówienia
+                selectedProducts = {};
+                updateSelectedProductsDisplay();
             
                 // Dodaj zamówienia do tabeli wystawionych zamówień
                 const issuedOrdersTbody = document.getElementById('issued-orders-tbody');
