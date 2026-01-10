@@ -833,6 +833,15 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
+                                @if(auth()->user()->is_admin && !$user->is_admin)
+                                <form action="{{ route('magazyn.user.toggleAdmin', $user->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('PUT')
+                                    <button type="submit" class="text-purple-600 hover:text-purple-800 font-bold text-sm" title="Mianuj na admina" onclick="return confirm('Czy na pewno chcesz mianować użytkownika {{ $user->name }} adminem?')">
+                                        👑
+                                    </button>
+                                </form>
+                                @endif
                                 @if(auth()->user()->is_admin || !$user->is_admin)
                                 <a href="{{ route('magazyn.user.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800 font-bold text-sm" title="Edytuj użytkownika">
                                     ✏️

@@ -1099,6 +1099,26 @@ class PartController extends Controller
         return redirect()->route('magazyn.settings')->with('success', "Użytkownik \"{$user->name}\" został zaktualizowany.");
     }
 
+    // MIANOWANIE UŻYTKOWNIKA NA ADMINA
+    public function toggleAdmin(User $user)
+    {
+        // Tylko admin może mianować innych na admina
+        if (!auth()->user()->is_admin) {
+            return redirect()->route('magazyn.settings')->with('error', 'Nie masz uprawnień do mianowania użytkowników na admina.');
+        }
+
+        // Nie można zmienić statusu admina superadmina (proximalumine@gmail.com)
+        if ($user->email === 'proximalumine@gmail.com') {
+            return redirect()->route('magazyn.settings')->with('error', 'Nie można zmienić statusu superadmina.');
+        }
+
+        // Przełącz status admina
+        $user->is_admin = 1;
+        $user->save();
+
+        return redirect()->route('magazyn.settings')->with('success', "Użytkownik \"{$user->name}\" został mianowany adminem.");
+    }
+
     // DODAJ DOSTAWCĘ
     public function addSupplier(Request $request)
     {

@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/magazyn/ustawienia/user', [PartController::class, 'addUser'])->name('magazyn.user.add')->middleware('permission:settings');
     Route::get('/magazyn/ustawienia/user/{user}/edit', [PartController::class, 'editUserView'])->name('magazyn.user.edit')->middleware('permission:settings');
     Route::put('/magazyn/ustawienia/user/{user}', [PartController::class, 'updateUser'])->name('magazyn.user.update')->middleware('permission:settings');
+    Route::put('/magazyn/ustawienia/user/{user}/toggle-admin', [PartController::class, 'toggleAdmin'])->name('magazyn.user.toggleAdmin')->middleware('permission:settings');
     Route::delete('/magazyn/ustawienia/user/{user}', [PartController::class, 'deleteUser'])->name('magazyn.user.delete')->middleware('permission:settings');
     Route::post('/magazyn/ustawienia/supplier', [PartController::class, 'addSupplier'])->name('magazyn.supplier.add')->middleware('permission:settings');
     Route::put('/magazyn/ustawienia/supplier/{supplier}', [PartController::class, 'updateSupplier'])->name('magazyn.supplier.update')->middleware('permission:settings');
