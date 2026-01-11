@@ -66,6 +66,25 @@ class DatabaseSeeder extends Seeder
             ]);
         }
         
+        // Upewnij się że qr_settings ma domyślne wartości
+        if (!\DB::table('qr_settings')->exists()) {
+            \DB::table('qr_settings')->insert([
+                'element1_type' => 'product_name',
+                'element1_value' => '',
+                'separator1' => '_',
+                'element2_type' => 'location',
+                'element2_value' => '',
+                'separator2' => '_',
+                'element3_type' => 'date',
+                'element3_value' => '',
+                'separator3' => '_',
+                'element4_type' => 'number',
+                'start_number' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        
         // Dodaj domyślne kategorie
         $defaultCategories = ['Automatyka', 'Elektryka', 'Mechanika'];
         foreach ($defaultCategories as $categoryName) {
