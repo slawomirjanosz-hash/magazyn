@@ -10,8 +10,26 @@
     <header class="bg-white shadow">
         <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="h-10">
-                <span class="text-xl font-bold">Portfolio</span>
+                @php
+                    try {
+                        $companySettings = \App\Models\CompanySetting::first();
+                        if ($companySettings && $companySettings->logo) {
+                            if (str_starts_with($companySettings->logo, 'data:image')) {
+                                $logoPath = $companySettings->logo;
+                            } else {
+                                $logoPath = asset('storage/' . $companySettings->logo);
+                            }
+                        } else {
+                            $logoPath = '/logo.png';
+                        }
+                        $companyName = $companySettings && $companySettings->name ? $companySettings->name : 'Moja Firma';
+                    } catch (\Exception $e) {
+                        $logoPath = '/logo.png';
+                        $companyName = 'Moja Firma';
+                    }
+                @endphp
+                <img src="{{ $logoPath }}" alt="{{ $companyName }}" class="h-10">
+                <span class="text-xl font-bold">{{ $companyName }}</span>
             </div>
         </div>
     </header>
