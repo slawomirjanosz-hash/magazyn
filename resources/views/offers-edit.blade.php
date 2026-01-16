@@ -179,6 +179,71 @@
                     </div>
                 </div>
 
+                <!-- Dynamiczne sekcje niestandardowe -->
+                <div id="custom-sections-container">
+                    @if(isset($offer->custom_sections) && is_array($offer->custom_sections))
+                        @foreach($offer->custom_sections as $sectionIndex => $customSection)
+                            <div class="border border-gray-300 rounded" id="section-custom{{ $sectionIndex + 1 }}">
+                                <div class="flex items-center justify-between p-4 bg-gray-50">
+                                    <button type="button" class="flex-1 flex items-center justify-between hover:bg-gray-100 transition" onclick="toggleSection('custom{{ $sectionIndex + 1 }}')">
+                                        <span class="font-semibold text-lg">{{ $customSection['name'] ?? 'Sekcja ' . ($sectionIndex + 1) }}</span>
+                                        <svg id="custom{{ $sectionIndex + 1 }}-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+                                    <button type="button" onclick="removeCustomSection('custom{{ $sectionIndex + 1 }}')" class="ml-2 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" title="Usuń sekcję">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
+                                <div id="custom{{ $sectionIndex + 1 }}-content" class="p-4 hidden">
+                                    <input type="hidden" name="custom_sections[{{ $sectionIndex + 1 }}][name]" value="{{ $customSection['name'] ?? '' }}">
+                                    <table class="w-full mb-4">
+                                        <thead>
+                                            <tr class="bg-gray-100">
+                                                <th class="p-2 text-left w-16">Nr</th>
+                                                <th class="p-2 text-left">Nazwa</th>
+                                                <th class="p-2 text-left">Dostawca</th>
+                                                <th class="p-2 text-left w-32">Cena (zł)</th>
+                                                <th class="p-2 w-16"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="custom{{ $sectionIndex + 1 }}-table">
+                                            @forelse($customSection['items'] ?? [] as $itemIndex => $item)
+                                                <tr>
+                                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="{{ $itemIndex + 1 }}" readonly></td>
+                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][name]" value="{{ $item['name'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][supplier]" value="{{ $item['supplier'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][price]" value="{{ $item['price'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateTotal('custom{{ $sectionIndex + 1 }}')"></td>
+                                                    <td class="p-2">@if($itemIndex > 0)<button type="button" onclick="removeRow(this, 'custom{{ $sectionIndex + 1 }}')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
+                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateTotal('custom{{ $sectionIndex + 1 }}')"></td>
+                                                    <td class="p-2"></td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                    <button type="button" onclick="addCustomRow('custom{{ $sectionIndex + 1 }}', {{ $sectionIndex + 1 }})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                                    <div class="mt-4 text-right">
+                                        <span class="font-semibold">Suma: </span>
+                                        <span id="custom{{ $sectionIndex + 1 }}-total" class="font-bold text-lg">0.00 zł</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+
+                <!-- Przycisk dodawania nowej sekcji -->
+                <div class="text-center">
+                    <button type="button" onclick="addCustomSection()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2 mx-auto">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        Dodaj nową sekcję
+                    </button>
+                </div>
+
                 <!-- Suma końcowa -->
                 <div class="bg-gray-50 p-4 rounded border border-gray-300">
                     <div class="text-right">
@@ -215,12 +280,28 @@
             works: {{ count($offer->works ?? []) }},
             materials: {{ count($offer->materials ?? []) }}
         };
+        
+        let customSectionCounter = {{ count($offer->custom_sections ?? []) }};
+        let customSections = [];
+        
+        // Inicjalizuj istniejące sekcje niestandardowe
+        @if(isset($offer->custom_sections) && is_array($offer->custom_sections))
+            @foreach($offer->custom_sections as $sectionIndex => $customSection)
+                customSections.push({{ $sectionIndex + 1 }});
+                rowCounters['custom{{ $sectionIndex + 1 }}'] = {{ count($customSection['items'] ?? []) }};
+            @endforeach
+        @endif
 
         // Oblicz sumy przy ładowaniu
         document.addEventListener('DOMContentLoaded', function() {
             calculateTotal('services');
             calculateTotal('works');
             calculateTotal('materials');
+            
+            // Oblicz sumy dla niestandardowych sekcji
+            customSections.forEach(sectionNum => {
+                calculateTotal(`custom${sectionNum}`);
+            });
         });
 
         function toggleSection(section) {
@@ -297,7 +378,122 @@
                 grandTotal += parseFloat(input.value) || 0;
             });
             
+            // Dodaj sumy z niestandardowych sekcji
+            customSections.forEach(sectionNum => {
+                const inputs = document.querySelectorAll(`#custom${sectionNum}-table .price-input`);
+                inputs.forEach(input => {
+                    grandTotal += parseFloat(input.value) || 0;
+                });
+            });
+            
             document.getElementById('grand-total').textContent = grandTotal.toFixed(2) + ' zł';
+        }
+        
+        // ===========================================
+        // OBSŁUGA DYNAMICZNYCH SEKCJI
+        // ===========================================
+        function addCustomSection() {
+            const sectionName = prompt('Podaj nazwę nowej sekcji:');
+            if (!sectionName || sectionName.trim() === '') {
+                return;
+            }
+            
+            customSectionCounter++;
+            const sectionId = `custom${customSectionCounter}`;
+            customSections.push(customSectionCounter);
+            rowCounters[sectionId] = 1;
+            
+            const container = document.getElementById('custom-sections-container');
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'border border-gray-300 rounded';
+            sectionDiv.id = `section-${sectionId}`;
+            
+            sectionDiv.innerHTML = `
+                <div class="flex items-center justify-between p-4 bg-gray-50">
+                    <button type="button" class="flex-1 flex items-center justify-between hover:bg-gray-100 transition" onclick="toggleSection('${sectionId}')">
+                        <span class="font-semibold text-lg">${escapeHtml(sectionName.trim())}</span>
+                        <svg id="${sectionId}-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <button type="button" onclick="removeCustomSection('${sectionId}')" class="ml-2 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" title="Usuń sekcję">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </div>
+                <div id="${sectionId}-content" class="p-4 hidden">
+                    <input type="hidden" name="custom_sections[${customSectionCounter}][name]" value="${escapeHtml(sectionName.trim())}">
+                    <table class="w-full mb-4">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-2 text-left w-16">Nr</th>
+                                <th class="p-2 text-left">Nazwa</th>
+                                <th class="p-2 text-left">Dostawca</th>
+                                <th class="p-2 text-left w-32">Cena (zł)</th>
+                                <th class="p-2 w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="${sectionId}-table">
+                            <tr>
+                                <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
+                                <td class="p-2"><input type="text" name="custom_sections[${customSectionCounter}][items][0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                <td class="p-2"><input type="text" name="custom_sections[${customSectionCounter}][items][0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${customSectionCounter}][items][0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="${sectionId}" onchange="calculateTotal('${sectionId}')"></td>
+                                <td class="p-2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button type="button" onclick="addCustomRow('${sectionId}', ${customSectionCounter})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                    <div class="mt-4 text-right">
+                        <span class="font-semibold">Suma: </span>
+                        <span id="${sectionId}-total" class="font-bold text-lg">0.00 zł</span>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(sectionDiv);
+            
+            // Automatycznie rozwiń nową sekcję
+            toggleSection(sectionId);
+        }
+        
+        function removeCustomSection(sectionId) {
+            if (!confirm('Czy na pewno chcesz usunąć tę sekcję?')) {
+                return;
+            }
+            
+            const sectionDiv = document.getElementById(`section-${sectionId}`);
+            if (sectionDiv) {
+                sectionDiv.remove();
+                const sectionNumber = parseInt(sectionId.replace('custom', ''));
+                const index = customSections.indexOf(sectionNumber);
+                if (index > -1) {
+                    customSections.splice(index, 1);
+                }
+                delete rowCounters[sectionId];
+                calculateGrandTotal();
+            }
+        }
+        
+        function addCustomRow(sectionId, sectionNumber) {
+            const table = document.getElementById(`${sectionId}-table`);
+            const rowCount = rowCounters[sectionId];
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="${rowCount + 1}" readonly></td>
+                <td class="p-2"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                <td class="p-2"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
+                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${sectionNumber}][items][${rowCount}][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="${sectionId}" onchange="calculateTotal('${sectionId}')"></td>
+                <td class="p-2"><button type="button" onclick="removeRow(this, '${sectionId}')" class="text-red-600 hover:text-red-800">✕</button></td>
+            `;
+            
+            table.appendChild(row);
+            rowCounters[sectionId]++;
+            updateRowNumbers(sectionId);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     </script>
 </body>

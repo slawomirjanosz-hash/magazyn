@@ -39,6 +39,7 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
     $services = collect($request->input('services', []))->filter(fn($item) => !empty($item['price']))->toArray();
     $works = collect($request->input('works', []))->filter(fn($item) => !empty($item['price']))->toArray();
     $materials = collect($request->input('materials', []))->filter(fn($item) => !empty($item['price']))->toArray();
+    $customSections = $request->input('custom_sections', []);
     
     foreach ($services as $item) {
         $totalPrice += floatval($item['price'] ?? 0);
@@ -50,6 +51,15 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
         $totalPrice += floatval($item['price'] ?? 0);
     }
     
+    // Dodaj ceny z niestandardowych sekcji
+    foreach ($customSections as $section) {
+        if (isset($section['items']) && is_array($section['items'])) {
+            foreach ($section['items'] as $item) {
+                $totalPrice += floatval($item['price'] ?? 0);
+            }
+        }
+    }
+    
     // Zapisz ofertę
     \App\Models\Offer::create([
         'offer_number' => $request->input('offer_number'),
@@ -58,6 +68,7 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
         'services' => $services,
         'works' => $works,
         'materials' => $materials,
+        'custom_sections' => $customSections,
         'total_price' => $totalPrice,
         'status' => $request->input('destination')
     ]);
@@ -120,6 +131,7 @@ Route::middleware('auth')->put('/wyceny/{offer}', function (Illuminate\Http\Requ
     $services = collect($request->input('services', []))->filter(fn($item) => !empty($item['price']))->toArray();
     $works = collect($request->input('works', []))->filter(fn($item) => !empty($item['price']))->toArray();
     $materials = collect($request->input('materials', []))->filter(fn($item) => !empty($item['price']))->toArray();
+    $customSections = $request->input('custom_sections', []);
     
     foreach ($services as $item) {
         $totalPrice += floatval($item['price'] ?? 0);
@@ -131,6 +143,15 @@ Route::middleware('auth')->put('/wyceny/{offer}', function (Illuminate\Http\Requ
         $totalPrice += floatval($item['price'] ?? 0);
     }
     
+    // Dodaj ceny z niestandardowych sekcji
+    foreach ($customSections as $section) {
+        if (isset($section['items']) && is_array($section['items'])) {
+            foreach ($section['items'] as $item) {
+                $totalPrice += floatval($item['price'] ?? 0);
+            }
+        }
+    }
+    
     // Zaktualizuj ofertę
     $offer->update([
         'offer_number' => $request->input('offer_number'),
@@ -139,6 +160,7 @@ Route::middleware('auth')->put('/wyceny/{offer}', function (Illuminate\Http\Requ
         'services' => $services,
         'works' => $works,
         'materials' => $materials,
+        'custom_sections' => $customSections,
         'total_price' => $totalPrice,
         'status' => $request->input('destination')
     ]);

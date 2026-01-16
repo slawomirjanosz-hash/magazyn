@@ -13,6 +13,7 @@ class Offer extends Model
         'services',
         'works',
         'materials',
+        'custom_sections',
         'total_price',
         'status'
     ];
@@ -21,6 +22,7 @@ class Offer extends Model
         'services' => 'array',
         'works' => 'array',
         'materials' => 'array',
+        'custom_sections' => 'array',
         'offer_date' => 'date'
     ];
 }
