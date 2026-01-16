@@ -10,6 +10,11 @@
 
 <div class="max-w-6xl mx-auto mt-10 bg-white p-6 rounded shadow">
 
+    <div class="flex justify-end mb-4">
+        <span id="datetime" class="ml-4 px-3 py-2 text-sm bg-white-200 text-gray-400 rounded whitespace-nowrap"></span>
+            </div>
+    </div>
+
     <h1 class="text-3xl font-bold mb-6">Magazyn</h1>
 
     <!-- ZAKŁADKI -->
@@ -117,6 +122,18 @@
 </div>
 
 <script>
+function updateDateTime() {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const formatted = `${day}.${month}.${year} ${hour}:${minute}`;
+    document.getElementById('datetime').textContent = formatted;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
 function showTab(tab) {
     ['add','remove','check'].forEach(t =>
         document.getElementById('tab-'+t).classList.add('hidden')

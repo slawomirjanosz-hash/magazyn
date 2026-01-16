@@ -312,10 +312,10 @@ $orderNamePreview = generateOrderNamePreview($orderSettings ?? null);
                     <button id="receive-order-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold">
                         ✅ Przyjmij zamówienie
                     </button>
-                    <button id="preview-generate-word-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">
+                    <button id="preview-generate-word-btn" class="bg-purple-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">
                         📄 Pobierz do Word
                     </button>
-                    <button id="preview-generate-pdf-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded font-semibold">
+                    <button id="preview-generate-pdf-btn" class="bg-blue-500 hover:bg-purple-600 text-white px-4 py-2 rounded font-semibold">
                         📄 Pobierz do PDF
                     </button>
                     <button id="preview-edit-order-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-semibold">

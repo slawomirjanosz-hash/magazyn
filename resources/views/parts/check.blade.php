@@ -49,7 +49,7 @@
             <select id="supplier-filter" class="border p-2">
                 <option value="">Wszyscy dostawcy</option>
                 @foreach($suppliers as $s)
-                    <option value="{{ strtolower($s->name) }}">{{ $s->short_name ?? $s->name }}</option>
+                    <option value="{{ strtolower($s->short_name ?? $s->name) }}">{{ $s->short_name ?? $s->name }}</option>
                 @endforeach
             </select>
 

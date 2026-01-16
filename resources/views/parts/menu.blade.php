@@ -20,6 +20,8 @@
             <img src="{{ $logoPath }}" alt="{{ $companyName }}" class="h-10">
             <span class="text-xl font-bold">
                 {{ $companyName }}
+                <span id="datetime" class="ml-4 px-3 py-1 text-sm font-normal bg-black-200 bg-opacity-30 text-gray-400 rounded whitespace-nowrap"></span>
+                                <span id="datetime" class="ml-4 px-3 py-1 text-sm font-normal bg-transparent text-gray-400 rounded whitespace-nowrap"></span>
                 @if(!$companySettings || !$companySettings->name)
                     <span class="block text-xs text-gray-400 font-normal mt-1">(Ustaw dane swojej firmy w Ustawieniach/Dane Mojej Firmy)</span>
                 @endif
@@ -92,6 +94,20 @@
         </nav>
 
     </div>
+<script>
+function updateDateTime() {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const formatted = `${day}.${month}.${year} ${hour}:${minute}`;
+    document.getElementById('datetime').textContent = formatted;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+</script>
 </header>
 
 <!-- Stopka z logo i napisem Powered by ProximaLumine -->
