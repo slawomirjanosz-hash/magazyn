@@ -46,6 +46,7 @@
                 <span class="text-gray-700 text-sm whitespace-nowrap">{{ Auth::user()->name }}</span>
                 <form action="{{ route('logout') }}" method="POST" class="inline">
                     @csrf
+                    <span id="datetime" class="mr-3 px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded whitespace-nowrap"></span>
                     <button type="submit" class="px-3 py-2 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded transition whitespace-nowrap">
                         Wyloguj
                     </button>
@@ -101,4 +102,16 @@
     <span>Powered by ProximaLumine</span>
 </div>
 </body>
+<script>
+function updateDateTime() {
+    const now = new Date();
+    const formatted = now.toLocaleString('pl-PL', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    document.getElementById('datetime').textContent = formatted;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+</script>
 </html>
