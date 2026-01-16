@@ -64,10 +64,18 @@
 
                 <!-- Sekcja Usługi -->
                 <div class="border border-gray-300 rounded">
-                    <button type="button" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition" onclick="toggleSection('services')">
-                        <span class="font-semibold text-lg">Usługi</span>
-                        <svg id="services-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
+                    <div class="flex items-center justify-between p-4 bg-gray-50">
+                        <button type="button" class="flex-1 flex items-center justify-between hover:bg-gray-100 transition" onclick="toggleSection('services')">
+                            <span class="font-semibold text-lg section-name" id="services-name-label">Usługi</span>
+                            <svg id="services-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <button type="button" onclick="editSectionName('services')" class="ml-2 px-2 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Edytuj nazwę">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3z" /></svg>
+                        </button>
+                        <button type="button" onclick="removeMainSection('services')" class="ml-2 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" title="Usuń sekcję">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
                     <div id="services-content" class="p-4 hidden">
                         <table class="w-full mb-4">
                             <thead>
@@ -115,10 +123,18 @@
 
                 <!-- Sekcja Prace własne -->
                 <div class="border border-gray-300 rounded">
-                    <button type="button" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition" onclick="toggleSection('works')">
-                        <span class="font-semibold text-lg">Prace własne</span>
-                        <svg id="works-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
+                    <div class="flex items-center justify-between p-4 bg-gray-50">
+                        <button type="button" class="flex-1 flex items-center justify-between hover:bg-gray-100 transition" onclick="toggleSection('works')">
+                            <span class="font-semibold text-lg section-name" id="works-name-label">Prace własne</span>
+                            <svg id="works-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <button type="button" onclick="editSectionName('works')" class="ml-2 px-2 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Edytuj nazwę">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3z" /></svg>
+                        </button>
+                        <button type="button" onclick="removeMainSection('works')" class="ml-2 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" title="Usuń sekcję">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
                     <div id="works-content" class="p-4 hidden">
                         <table class="w-full mb-4">
                             <thead>
@@ -166,10 +182,18 @@
 
                 <!-- Sekcja Materiały -->
                 <div class="border border-gray-300 rounded">
-                    <button type="button" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition" onclick="toggleSection('materials')">
-                        <span class="font-semibold text-lg">Materiały</span>
-                        <svg id="materials-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
+                    <div class="flex items-center justify-between p-4 bg-gray-50">
+                        <button type="button" class="flex-1 flex items-center justify-between hover:bg-gray-100 transition" onclick="toggleSection('materials')">
+                            <span class="font-semibold text-lg section-name" id="materials-name-label">Materiały</span>
+                            <svg id="materials-icon" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <button type="button" onclick="editSectionName('materials')" class="ml-2 px-2 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Edytuj nazwę">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3z" /></svg>
+                        </button>
+                        <button type="button" onclick="removeMainSection('materials')" class="ml-2 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" title="Usuń sekcję">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
                     <div id="materials-content" class="p-4 hidden">
                         <table class="w-full mb-4">
                             <thead>
@@ -517,13 +541,38 @@
 
         function editSectionName(sectionId, sectionNumber) {
             const label = document.getElementById(`${sectionId}-name-label`);
-            const inputId = `${sectionId}-name-input`;
+            if (!label) return;
             const current = label.textContent;
             const newName = prompt('Edytuj nazwę sekcji:', current);
             if (newName && newName.trim() !== '') {
                 label.textContent = newName.trim();
-                document.getElementById(inputId).value = newName.trim();
+                // For custom sections, update hidden input
+                const inputId = `${sectionId}-name-input`;
+                const input = document.getElementById(inputId);
+                if (input) input.value = newName.trim();
             }
+        }
+
+        function removeMainSection(sectionId) {
+            if (!confirm('Czy na pewno chcesz usunąć tę sekcję?')) {
+                return;
+            }
+            // Hide the section and clear its rows
+            const sectionDiv = document.getElementById(`section-${sectionId}`) || document.querySelector(`[onclick*="toggleSection('${sectionId}')"]`).closest('.border');
+            if (sectionDiv) {
+                sectionDiv.style.display = 'none';
+            }
+            // Clear table rows
+            const table = document.getElementById(`${sectionId}-table`);
+            if (table) {
+                table.innerHTML = '';
+            }
+            // Reset total
+            const total = document.getElementById(`${sectionId}-total`);
+            if (total) {
+                total.textContent = '0.00 zł';
+            }
+            calculateGrandTotal();
         }
         
         function removeCustomSection(sectionId) {
