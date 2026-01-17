@@ -196,12 +196,12 @@
                                 <th class="border p-2 text-left">Logo</th>
                                 <th class="border p-2 text-left">Nazwa</th>
                                 <th class="border p-2 text-left">Skrót</th>
-                                <th class="border p-2 text-left">NIP</th>
-                                <th class="border p-2 text-left">Adres</th>
-                                <th class="border p-2 text-left">Kod pocztowy</th>
+                                <th class="border p-2 text-left min-w-[110px] max-w-[110px]">NIP</th>
+                                <!-- <th class="border p-2 text-left">Adres</th> -->
+                                <!-- <th class="border p-2 text-left">Kod pocztowy</th> -->
                                 <th class="border p-2 text-left">Miasto</th>
-                                <th class="border p-2 text-left">Telefon</th>
-                                <th class="border p-2 text-left">Email</th>
+                                <th class="border p-2 text-left min-w-[140px]">Telefon</th>
+                                <th class="border p-2 text-left min-w-[200px]">Email</th>
                                 <th class="border p-2 text-center">Akcja</th>
                             </tr>
                         </thead>
@@ -225,12 +225,12 @@
                                     </td>
                                     <td class="border p-2">{{ $supplier->name }}</td>
                                     <td class="border p-2">{{ $supplier->short_name ?? '-' }}</td>
-                                    <td class="border p-2">{{ $supplier->nip ?? '-' }}</td>
-                                    <td class="border p-2">{{ $supplier->address ? 'UL. ' . $supplier->address : '-' }}</td>
-                                    <td class="border p-2">{{ $supplier->postal_code ?? '-' }}</td>
+                                    <td class="border p-2 min-w-[110px] max-w-[110px] truncate">{{ $supplier->nip ?? '-' }}</td>
+                                    <!-- <td class="border p-2">{{ $supplier->address ? 'UL. ' . $supplier->address : '-' }}</td> -->
+                                    <!-- <td class="border p-2">{{ $supplier->postal_code ?? '-' }}</td> -->
                                     <td class="border p-2">{{ $supplier->city ?? '-' }}</td>
-                                    <td class="border p-2">{{ $supplier->phone ?? '-' }}</td>
-                                    <td class="border p-2">{{ $supplier->email ?? '-' }}</td>
+                                    <td class="border p-2 min-w-[140px]">{{ $supplier->phone ?? '-' }}</td>
+                                    <td class="border p-2 min-w-[200px]">{{ $supplier->email ?? '-' }}</td>
                                     <td class="border p-2 text-center whitespace-nowrap">
                                         <button type="button" 
                                             class="text-blue-600 hover:text-blue-800 mr-2 edit-supplier-btn"
