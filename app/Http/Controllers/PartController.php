@@ -2859,6 +2859,155 @@ class PartController extends Controller
         return $qrCode;
     }
 
+    /**
+     * Import produktów z pliku Excel
+     */
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls|max:10240'
+        ]);
+
+        try {
+            $file = $request->file('excel_file');
+            
+            // Załaduj plik Excel
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+
+            // Zakładamy że pierwszy wiersz to nagłówki
+            $headers = array_shift($rows);
+            
+            // Normalizuj nagłówki (lowercase, bez białych znaków)
+            $headers = array_map(function($h) {
+                return strtolower(trim($h));
+            }, $headers);
+
+            // Mapowanie kolumn (elastyczne nazwy)
+            $columnMap = [
+                'produkty' => ['produkty', 'produkt', 'nazwa', 'name'],
+                'opis' => ['opis', 'description', 'desc'],
+                'dost' => ['dost', 'dost.', 'dostawca', 'supplier'],
+                'cena' => ['cena', 'price', 'net_price', 'cena netto'],
+                'waluta' => ['waluta', 'currency', 'curr'],
+                'kategoria' => ['kategoria', 'category', 'kat'],
+                'ilosc' => ['ilość', 'ilosc', 'quantity', 'qty', 'sztuk'],
+                'lokalizacja' => ['lok', 'lok.', 'lokalizacja', 'location', 'miejsce']
+            ];
+
+            // Znajdź indeksy kolumn
+            $colIndexes = [];
+            foreach ($columnMap as $key => $possibleNames) {
+                foreach ($headers as $index => $header) {
+                    if (in_array($header, $possibleNames)) {
+                        $colIndexes[$key] = $index;
+                        break;
+                    }
+                }
+            }
+
+            // Sprawdź czy znaleziono kolumnę z nazwą produktu
+            if (!isset($colIndexes['produkty'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nie znaleziono kolumny z nazwą produktu (produkty/nazwa/name)'
+                ], 400);
+            }
+
+            $products = [];
+            $categories = \App\Models\Category::all();
+            $suppliers = \App\Models\Supplier::all();
+
+            foreach ($rows as $row) {
+                // Pomiń puste wiersze
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                $productName = isset($colIndexes['produkty']) ? trim($row[$colIndexes['produkty']] ?? '') : '';
+                
+                if (empty($productName)) {
+                    continue;
+                }
+
+                // Pobierz dane z wiersza
+                $description = isset($colIndexes['opis']) ? trim($row[$colIndexes['opis']] ?? '') : '';
+                $supplierName = isset($colIndexes['dost']) ? trim($row[$colIndexes['dost']] ?? '') : '';
+                $price = isset($colIndexes['cena']) ? floatval($row[$colIndexes['cena']] ?? 0) : 0;
+                $currency = isset($colIndexes['waluta']) ? strtoupper(trim($row[$colIndexes['waluta']] ?? 'PLN')) : 'PLN';
+                $categoryName = isset($colIndexes['kategoria']) ? trim($row[$colIndexes['kategoria']] ?? '') : '';
+                $quantity = isset($colIndexes['ilosc']) ? intval($row[$colIndexes['ilosc']] ?? 1) : 1;
+                $location = isset($colIndexes['lokalizacja']) ? trim($row[$colIndexes['lokalizacja']] ?? '') : '';
+
+                // Walidacja waluty
+                if (!in_array($currency, ['PLN', 'EUR', '$'])) {
+                    $currency = 'PLN';
+                }
+
+                // Znajdź ID kategorii
+                $categoryId = null;
+                if (!empty($categoryName)) {
+                    $category = $categories->firstWhere('name', $categoryName);
+                    if ($category) {
+                        $categoryId = $category->id;
+                    }
+                }
+                
+                // Jeśli nie znaleziono kategorii, użyj pierwszej dostępnej
+                if (!$categoryId && $categories->count() > 0) {
+                    $categoryId = $categories->first()->id;
+                }
+
+                // Znajdź pełną nazwę dostawcy (może być skrót)
+                $fullSupplierName = $supplierName;
+                if (!empty($supplierName)) {
+                    $supplier = $suppliers->first(function($s) use ($supplierName) {
+                        return $s->name === $supplierName || 
+                               ($s->short_name && $s->short_name === $supplierName);
+                    });
+                    if ($supplier) {
+                        $fullSupplierName = $supplier->name;
+                    }
+                }
+
+                // Generuj unikalny kod QR dla każdego produktu
+                $qrCode = $this->autoGenerateQrCode($productName, $location);
+
+                $products[] = [
+                    'name' => $productName,
+                    'description' => $description ?: null,
+                    'supplier' => $fullSupplierName ?: null,
+                    'net_price' => $price > 0 ? $price : null,
+                    'currency' => $currency,
+                    'category_id' => $categoryId,
+                    'quantity' => max(1, $quantity),
+                    'location' => $location ?: null,
+                    'qr_code' => $qrCode
+                ];
+            }
+
+            if (empty($products)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nie znaleziono produktów do zaimportowania w pliku Excel'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'products' => $products,
+                'message' => 'Zaimportowano ' . count($products) . ' produktów'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Błąd podczas importu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     // GENERUJ DOKUMENT WORD DLA OFERTY
     public function generateOfferWord($offerId)
     {

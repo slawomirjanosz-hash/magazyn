@@ -254,7 +254,36 @@
                         </tbody>
                     </table>
                     <button type="button" id="remove-all-selected-btn-inner" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs mr-2">🗑️ Wyczyść listę</button>
-                    <button type="button" id="add-all-btn-inner" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">✅ Dodaj wszystkie</button>
+                    <button type="button" id="add-all-btn-inner" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs mr-2">✅ Dodaj wszystkie</button>
+                    <button type="button" id="import-excel-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">📄 Załaduj z Excela</button>
+                </div>
+            </div>
+
+            {{-- MODAL IMPORTU Z EXCELA --}}
+            <div id="excel-import-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-lg font-bold mb-4">📄 Import produktów z Excel</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Wybierz plik Excel (.xlsx, .xls) z kolumnami:<br>
+                        <strong>produkty, opis, dost., cena, waluta, kategoria, ilość, lok.</strong>
+                    </p>
+                    <form id="excel-import-form" enctype="multipart/form-data">
+                        @csrf
+                        <input type="file" id="excel-file-input" name="excel_file" accept=".xlsx,.xls" class="w-full border rounded p-2 mb-4" required>
+                        <div class="flex gap-2">
+                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex-1">
+                                Importuj
+                            </button>
+                            <button type="button" id="close-excel-modal" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex-1">
+                                Anuluj
+                            </button>
+                        </div>
+                    </form>
+                    <div id="import-progress" class="mt-4 hidden">
+                        <div class="bg-blue-100 rounded p-3 text-sm text-blue-700">
+                            ⏳ Importowanie produktów...
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1347,6 +1376,157 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 </div>
+
+<script>
+    // IMPORT Z EXCELA
+    const excelImportBtn = document.getElementById('import-excel-btn');
+    const excelImportModal = document.getElementById('excel-import-modal');
+    const closeExcelModal = document.getElementById('close-excel-modal');
+    const excelImportForm = document.getElementById('excel-import-form');
+    const importProgress = document.getElementById('import-progress');
+
+    excelImportBtn.addEventListener('click', () => {
+        excelImportModal.style.display = 'flex';
+    });
+
+    closeExcelModal.addEventListener('click', () => {
+        excelImportModal.style.display = 'none';
+        excelImportForm.reset();
+        importProgress.classList.add('hidden');
+    });
+
+    excelImportForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('excel-file-input');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Wybierz plik Excel');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('excel_file', file);
+
+        importProgress.classList.remove('hidden');
+
+        try {
+            const response = await fetch('{{ route('parts.importExcel') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                importProgress.classList.add('hidden');
+                excelImportModal.style.display = 'none';
+                excelImportForm.reset();
+
+                // Dodaj produkty do katalogu
+                if (data.products && data.products.length > 0) {
+                    const catalogTable = document.querySelector('#catalog-product-list tbody');
+                    
+                    data.products.forEach(product => {
+                        addProductToCatalog(product);
+                    });
+
+                    alert(`✅ Zaimportowano ${data.products.length} produktów do katalogu`);
+                } else {
+                    alert('✅ Import zakończony, ale nie znaleziono produktów do dodania');
+                }
+            } else {
+                importProgress.classList.add('hidden');
+                alert('❌ Błąd: ' + (data.message || 'Nie udało się zaimportować produktów'));
+            }
+        } catch (error) {
+            importProgress.classList.add('hidden');
+            console.error('Błąd importu:', error);
+            alert('❌ Błąd podczas importowania pliku: ' + error.message);
+        }
+    });
+
+    // Funkcja dodająca produkt do katalogu
+    function addProductToCatalog(product) {
+        const catalogTable = document.querySelector('#catalog-product-list tbody');
+        const rowCount = catalogTable.querySelectorAll('tr').length;
+        
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td class="border p-2 text-gray-700 text-xs">${rowCount + 1}</td>
+            <td class="border p-2">
+                <input type="text" name="catalog_products[${rowCount}][name]" value="${product.name}" class="w-full px-2 py-1 border rounded text-xs" required>
+            </td>
+            <td class="border p-2">
+                <input type="text" name="catalog_products[${rowCount}][description]" value="${product.description || ''}" class="w-full px-2 py-1 border rounded text-xs">
+            </td>
+            <td class="border p-2">
+                <select name="catalog_products[${rowCount}][supplier]" class="w-full px-2 py-1 border rounded text-xs">
+                    ${supplierOptions}
+                </select>
+            </td>
+            <td class="border p-2">
+                <input type="number" name="catalog_products[${rowCount}][net_price]" value="${product.net_price || ''}" step="0.01" class="w-full px-2 py-1 border rounded text-xs">
+            </td>
+            <td class="border p-2">
+                <select name="catalog_products[${rowCount}][currency]" class="w-full px-2 py-1 border rounded text-xs">
+                    <option value="PLN" ${product.currency === 'PLN' ? 'selected' : ''}>PLN</option>
+                    <option value="EUR" ${product.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                    <option value="$" ${product.currency === '$' ? 'selected' : ''}>$</option>
+                </select>
+            </td>
+            <td class="border p-2">
+                <select name="catalog_products[${rowCount}][category_id]" class="w-full px-2 py-1 border rounded text-xs" required>
+                    ${categoryOptions}
+                </select>
+            </td>
+            <td class="border p-2">
+                <input type="number" name="catalog_products[${rowCount}][quantity]" value="${product.quantity || 1}" min="1" class="w-full px-2 py-1 border rounded text-xs" required>
+            </td>
+            <td class="border p-2">
+                <input type="text" name="catalog_products[${rowCount}][location]" value="${product.location || ''}" maxlength="10" class="w-full px-2 py-1 border rounded text-xs">
+            </td>
+            <td class="border p-2">
+                <input type="hidden" name="catalog_products[${rowCount}][qr_code]" value="${product.qr_code || ''}">
+                <span class="text-xs text-gray-500">${product.qr_code ? '✅ QR' : ''}</span>
+            </td>
+            <td class="border p-2 text-center">
+                <button type="button" class="remove-catalog-product bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
+            </td>
+        `;
+        
+        catalogTable.appendChild(newRow);
+        
+        // Ustaw dostawcę jeśli został zaimportowany
+        if (product.supplier) {
+            const supplierSelect = newRow.querySelector('select[name*="[supplier]"]');
+            supplierSelect.value = product.supplier;
+        }
+        
+        // Ustaw kategorię jeśli została zaimportowana
+        if (product.category_id) {
+            const categorySelect = newRow.querySelector('select[name*="[category_id]"]');
+            categorySelect.value = product.category_id;
+        }
+        
+        // Dodaj event listener do przycisku usuwania
+        newRow.querySelector('.remove-catalog-product').addEventListener('click', function() {
+            newRow.remove();
+            updateCatalogRowNumbers();
+        });
+    }
+
+    function updateCatalogRowNumbers() {
+        const rows = document.querySelectorAll('#catalog-product-list tbody tr');
+        rows.forEach((row, index) => {
+            row.querySelector('td:first-child').textContent = index + 1;
+        });
+    }
+</script>
 
 </body>
 </html>

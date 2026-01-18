@@ -271,6 +271,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/magazyn/ustawienia/qr-settings', [PartController::class, 'saveQrSettings'])->name('magazyn.qr-settings.save')->middleware('permission:settings');
     Route::post('/parts/generate-qr', [PartController::class, 'generateQrCode'])->name('parts.generateQr')->middleware('permission:add');
     Route::post('/parts/find-by-qr', [PartController::class, 'findByQr'])->name('parts.findByQr')->middleware('permission:add');
+    Route::post('/parts/import-excel', [PartController::class, 'importExcel'])->name('parts.importExcel')->middleware('permission:add');
     Route::delete('/magazyn/parts/bulk-delete', [PartController::class, 'bulkDelete'])->name('magazyn.parts.bulkDelete')->middleware('permission:view_catalog');
     Route::put('/magazyn/parts/{part}/update-price', [PartController::class, 'updatePrice'])->name('magazyn.parts.updatePrice')->middleware('permission:view_catalog');
     Route::put('/magazyn/parts/{part}/update', [PartController::class, 'updatePart'])->name('magazyn.parts.update')->middleware('permission:view_catalog');
