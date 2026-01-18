@@ -1381,12 +1381,31 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <script>
+    // Globalne opcje dostawców i kategorii dla importu
+    let supplierOptions = '<option value="">- wybierz -</option>';
+    @foreach($suppliers as $s)
+        supplierOptions += `<option value="{{ $s->name }}">{{ $s->short_name ?? $s->name }}</option>`;
+    @endforeach
+    
+    let categoryOptions = '<option value="">- wybierz -</option>';
+    @foreach($categories as $c)
+        categoryOptions += `<option value="{{ $c->id }}">{{ $c->name }}</option>`;
+    @endforeach
+
     // IMPORT Z EXCELA
     const excelImportBtn = document.getElementById('import-excel-btn');
     const excelImportModal = document.getElementById('excel-import-modal');
     const closeExcelModal = document.getElementById('close-excel-modal');
     const excelImportForm = document.getElementById('excel-import-form');
     const importProgress = document.getElementById('import-progress');
+
+    // Funkcja pomocnicza do escape'owania HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
     excelImportBtn.addEventListener('click', () => {
         excelImportModal.style.display = 'flex';
@@ -1432,8 +1451,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Dodaj produkty do katalogu
                 if (data.products && data.products.length > 0) {
-                    const catalogTable = document.querySelector('#catalog-product-list tbody');
-                    
                     data.products.forEach(product => {
                         addProductToCatalog(product);
                     });
@@ -1455,52 +1472,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Funkcja dodająca produkt do katalogu
     function addProductToCatalog(product) {
-        const catalogTable = document.querySelector('#catalog-product-list tbody');
+        const catalogTable = document.querySelector('#selected-products-table-inner tbody');
+        if (!catalogTable) {
+            console.error('Nie znaleziono tabeli produktów');
+            return;
+        }
+        
         const rowCount = catalogTable.querySelectorAll('tr').length;
         
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
-            <td class="border p-2 text-gray-700 text-xs">${rowCount + 1}</td>
-            <td class="border p-2">
-                <input type="text" name="catalog_products[${rowCount}][name]" value="${product.name}" class="w-full px-2 py-1 border rounded text-xs" required>
+            <td class="border p-1 text-center">
+                <input type="checkbox" class="row-checkbox-add w-4 h-4 cursor-pointer">
             </td>
-            <td class="border p-2">
-                <input type="text" name="catalog_products[${rowCount}][description]" value="${product.description || ''}" class="w-full px-2 py-1 border rounded text-xs">
+            <td class="border p-1 text-left">
+                <input type="text" name="catalog_products[${rowCount}][name]" value="${escapeHtml(product.name)}" class="w-full px-2 py-1 border rounded text-xs" required>
             </td>
-            <td class="border p-2">
-                <select name="catalog_products[${rowCount}][supplier]" class="w-full px-2 py-1 border rounded text-xs">
+            <td class="border p-1 text-left">
+                <select name="catalog_products[${rowCount}][supplier]" class="w-full px-1 py-1 border rounded text-xs">
                     ${supplierOptions}
                 </select>
             </td>
-            <td class="border p-2">
-                <input type="number" name="catalog_products[${rowCount}][net_price]" value="${product.net_price || ''}" step="0.01" class="w-full px-2 py-1 border rounded text-xs">
-            </td>
-            <td class="border p-2">
-                <select name="catalog_products[${rowCount}][currency]" class="w-full px-2 py-1 border rounded text-xs">
+            <td class="border p-1 text-center">
+                <input type="number" name="catalog_products[${rowCount}][net_price]" value="${product.net_price || ''}" step="0.01" class="w-20 px-1 py-1 border rounded text-xs">
+                <select name="catalog_products[${rowCount}][currency]" class="w-16 px-1 py-1 border rounded text-xs ml-1">
                     <option value="PLN" ${product.currency === 'PLN' ? 'selected' : ''}>PLN</option>
                     <option value="EUR" ${product.currency === 'EUR' ? 'selected' : ''}>EUR</option>
                     <option value="$" ${product.currency === '$' ? 'selected' : ''}>$</option>
                 </select>
             </td>
-            <td class="border p-2">
-                <select name="catalog_products[${rowCount}][category_id]" class="w-full px-2 py-1 border rounded text-xs" required>
+            <td class="border p-1 text-left">
+                <select name="catalog_products[${rowCount}][category_id]" class="w-full px-1 py-1 border rounded text-xs" required>
                     ${categoryOptions}
                 </select>
             </td>
-            <td class="border p-2">
-                <input type="number" name="catalog_products[${rowCount}][quantity]" value="${product.quantity || 1}" min="1" class="w-full px-2 py-1 border rounded text-xs" required>
+            <td class="border p-1 text-center">
+                <span class="text-xs">-</span>
             </td>
-            <td class="border p-2">
-                <input type="text" name="catalog_products[${rowCount}][location]" value="${product.location || ''}" maxlength="10" class="w-full px-2 py-1 border rounded text-xs">
+            <td class="border p-1 text-center">
+                <input type="number" name="catalog_products[${rowCount}][quantity]" value="${product.quantity || 1}" min="1" class="w-16 px-1 py-1 border rounded text-xs" required>
             </td>
-            <td class="border p-2">
-                <input type="hidden" name="catalog_products[${rowCount}][qr_code]" value="${product.qr_code || ''}">
-                <span class="text-xs text-gray-500">${product.qr_code ? '✅ QR' : ''}</span>
-            </td>
-            <td class="border p-2 text-center">
+            <td class="border p-1 text-center">
                 <button type="button" class="remove-catalog-product bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
             </td>
         `;
+        
+        // Dodaj ukryte pola dla innych danych
+        const hiddenFields = [
+            `<input type="hidden" name="catalog_products[${rowCount}][description]" value="${escapeHtml(product.description || '')}">`,
+            `<input type="hidden" name="catalog_products[${rowCount}][location]" value="${escapeHtml(product.location || '')}">`,
+            `<input type="hidden" name="catalog_products[${rowCount}][qr_code]" value="${escapeHtml(product.qr_code || '')}">`
+        ].join('');
+        
+        newRow.innerHTML += hiddenFields;
         
         catalogTable.appendChild(newRow);
         
@@ -1524,9 +1548,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCatalogRowNumbers() {
-        const rows = document.querySelectorAll('#catalog-product-list tbody tr');
+        const rows = document.querySelectorAll('#selected-products-table-inner tbody tr');
         rows.forEach((row, index) => {
-            row.querySelector('td:first-child').textContent = index + 1;
+            // Aktualizuj numery jeśli potrzeba
         });
     }
 </script>
