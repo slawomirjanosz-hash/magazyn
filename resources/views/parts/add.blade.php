@@ -153,7 +153,7 @@
                         id="generate-qr-btn"
                         class="bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2 mt-2"
                     >
-                        📱 Generuj QR
+                        📱 Podgląd QR
                     </button>
                     <button
                         type="button"
@@ -164,6 +164,7 @@
                     >
                         🔍 Odczytaj QR
                     </button>
+                    <p class="text-xs text-gray-500 mt-2">💡 Kod QR zostanie automatycznie wygenerowany po dodaniu produktu</p>
                 </div>
                 
                 {{-- KOMUNIKAT SKANOWANIA W FORMULARZU --}}

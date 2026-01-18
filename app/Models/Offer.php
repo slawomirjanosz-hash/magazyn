@@ -10,6 +10,7 @@ class Offer extends Model
         'offer_number',
         'offer_title',
         'offer_date',
+        'offer_description',
         'services',
         'works',
         'materials',

@@ -236,6 +236,41 @@
                     </div>
                 </div>
 
+                <!-- Opis oferty -->
+                <div class="mt-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Opis oferty</label>
+                    <div id="offer_description_editor" style="min-height: 150px; background: white; border: 1px solid #d1d5db; border-radius: 0.375rem;"></div>
+                    <textarea id="offer_description" name="offer_description" style="display: none;"></textarea>
+                </div>
+
+                <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+                <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const quill = new Quill('#offer_description_editor', {
+                        theme: 'snow',
+                        placeholder: 'Dodaj opis oferty...',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'font': [] }],
+                                [{ 'align': [] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['link'],
+                                ['clean']
+                            ]
+                        }
+                    });
+                    
+                    // Synchronizuj z hidden textarea
+                    quill.on('text-change', function() {
+                        document.getElementById('offer_description').value = quill.root.innerHTML;
+                    });
+                });
+                </script>
+
                 <!-- Miejsce docelowe oferty -->
                 <div class="border-t pt-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Gdzie ma wylądować oferta?</label>

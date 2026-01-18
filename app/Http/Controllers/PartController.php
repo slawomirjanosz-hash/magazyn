@@ -687,6 +687,14 @@ class PartController extends Controller
         if (array_key_exists('qr_code', $data) && $data['qr_code']) {
             $part->qr_code = $data['qr_code'];
         }
+        
+        // Automatyczne generowanie kodu QR jeśli jeszcze nie istnieje
+        if (!$part->qr_code) {
+            $qrCode = $this->autoGenerateQrCode($data['name'], $data['location'] ?? null);
+            if ($qrCode) {
+                $part->qr_code = $qrCode;
+            }
+        }
 
         // zwiększenie stanu
         $part->quantity += (int) $data['quantity'];
@@ -2766,6 +2774,91 @@ class PartController extends Controller
         ]);
     }
 
+    /**
+     * Automatyczne generowanie kodu QR dla produktu (bez zwracania obrazka)
+     */
+    private function autoGenerateQrCode($productName, $location = null)
+    {
+        $qrSettings = \DB::table('qr_settings')->first();
+        
+        if (!$qrSettings) {
+            return null; // Brak ustawień - nie generujemy kodu
+        }
+
+        // Buduj kod QR na podstawie ustawień
+        $qrCodeParts = [];
+        
+        // Element 1
+        if ($qrSettings->element1_type !== 'empty') {
+            if ($qrSettings->element1_type === 'product_name') {
+                $qrCodeParts[] = $productName;
+            } elseif ($qrSettings->element1_type === 'text') {
+                $qrCodeParts[] = $qrSettings->element1_value;
+            } elseif ($qrSettings->element1_type === 'date') {
+                $qrCodeParts[] = now()->format('Ymd');
+            } elseif ($qrSettings->element1_type === 'time') {
+                $qrCodeParts[] = now()->format('Hi');
+            }
+        }
+        
+        // Element 2
+        if ($qrSettings->element2_type !== 'empty') {
+            if ($qrSettings->element2_type === 'location') {
+                $qrCodeParts[] = $location ?? 'BRAK';
+            } elseif ($qrSettings->element2_type === 'text') {
+                $qrCodeParts[] = $qrSettings->element2_value;
+            } elseif ($qrSettings->element2_type === 'date') {
+                $qrCodeParts[] = now()->format('Ymd');
+            } elseif ($qrSettings->element2_type === 'time') {
+                $qrCodeParts[] = now()->format('Hi');
+            }
+        }
+        
+        // Element 3
+        if ($qrSettings->element3_type !== 'empty') {
+            if ($qrSettings->element3_type === 'text') {
+                $qrCodeParts[] = $qrSettings->element3_value;
+            } elseif ($qrSettings->element3_type === 'date') {
+                $qrCodeParts[] = now()->format('Ymd');
+            } elseif ($qrSettings->element3_type === 'time') {
+                $qrCodeParts[] = now()->format('Hi');
+            }
+        }
+        
+        // Element 4 (liczba inkrementowana lub data)
+        if ($qrSettings->element4_type !== 'empty') {
+            if ($qrSettings->element4_type === 'date') {
+                $qrCodeParts[] = now()->format('Ymd');
+            } elseif ($qrSettings->element4_type === 'number') {
+                // Inkrementuj liczbę w bazie
+                $currentNumber = $qrSettings->start_number;
+                $qrCodeParts[] = $currentNumber;
+                
+                // Zaktualizuj start_number (inkrementuj)
+                \DB::table('qr_settings')->update([
+                    'start_number' => $currentNumber + 1
+                ]);
+            }
+        }
+        
+        // Buduj finalny kod QR z separatorami
+        $separators = [
+            $qrSettings->separator1 ?? '_',
+            $qrSettings->separator2 ?? '_',
+            $qrSettings->separator3 ?? '_'
+        ];
+        
+        $qrCode = '';
+        foreach ($qrCodeParts as $index => $part) {
+            $qrCode .= $part;
+            if ($index < count($qrCodeParts) - 1) {
+                $qrCode .= $separators[$index] ?? '_';
+            }
+        }
+        
+        return $qrCode;
+    }
+
     // GENERUJ DOKUMENT WORD DLA OFERTY
     public function generateOfferWord($offerId)
     {
@@ -2888,6 +2981,25 @@ class PartController extends Controller
                 ['bold' => true, 'size' => 12],
                 ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 200]
             );
+        }
+        
+        // Opis oferty
+        if (!empty($offer->offer_description)) {
+            $section->addTextBreak(1);
+            
+            // Konwersja HTML na tekst z formatowaniem dla Worda
+            $descriptionHtml = $offer->offer_description;
+            
+            // Użyj HTMLtoPhpWord do parsowania HTML
+            try {
+                \PhpOffice\PhpWord\Shared\Html::addHtml($section, $descriptionHtml, false, false);
+            } catch (\Exception $e) {
+                // Jeśli parsowanie HTML nie zadziała, dodaj jako zwykły tekst
+                $plainText = strip_tags($descriptionHtml);
+                $section->addText($plainText, ['size' => 10]);
+            }
+            
+            $section->addTextBreak(1);
         }
         
         // Tabela z usługami
