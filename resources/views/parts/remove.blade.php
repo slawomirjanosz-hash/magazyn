@@ -88,11 +88,11 @@
     </div>
 
 
-    {{-- SEKCJA: KATALOG PRODUKTÓW (ROZWIJALNA) --}}
+    {{-- SEKCJA: POBIERZ Z KATALOGU PRODUKTÓW (ROZWIJALNA) --}}
     <div class="bg-white rounded shadow mb-6 border">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="catalog-content">
             <span class="toggle-arrow text-lg">▶</span>
-            <h3 class="text-lg font-semibold">Katalog Produktów</h3>
+            <h3 class="text-lg font-semibold">Pobierz z Katalogu Produktów</h3>
         </button>
         <div id="catalog-content" class="collapsible-content hidden p-6 border-t">
             {{-- PODSEKCJA: PRODUKTY DO POBRANIA (COLLAPSIBLE) --}}
@@ -135,7 +135,7 @@
                 </div>
             </div>
 
-            {{-- KATALOG PRODUKTÓW --}}
+            {{-- POBIERZ Z KATALOGU PRODUKTÓW --}}
             <table class="w-full border border-collapse text-sm">
                 <table class="w-full border border-collapse text-xs">
                 <thead class="bg-gray-100">

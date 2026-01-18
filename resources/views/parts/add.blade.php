@@ -221,11 +221,11 @@
         </div>
     </div>
 
-    {{-- SEKCJA: KATALOG PRODUKTÓW (ROZWIJALNA) --}}
+    {{-- SEKCJA: DODAJ Z KATALOGU PRODUKTÓW (ROZWIJALNA) --}}
     <div class="bg-white rounded shadow mb-6 border">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="catalog-content">
             <span class="toggle-arrow text-lg">▶</span>
-            <h3 class="text-lg font-semibold">Katalog Produktów</h3>
+            <h3 class="text-lg font-semibold">Dodaj z Katalogu Produktów</h3>
         </button>
         <div id="catalog-content" class="collapsible-content hidden p-6 border-t">
             {{-- PODSEKCJA: PRODUKTY DO DODANIA (COLLAPSIBLE) --}}
@@ -255,6 +255,7 @@
                     </table>
                     <button type="button" id="remove-all-selected-btn-inner" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs mr-2">🗑️ Wyczyść listę</button>
                     <button type="button" id="add-all-btn-inner" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs mr-2">✅ Dodaj wszystkie</button>
+                    <span id="add-all-loading-info" class="ml-2 text-xs text-blue-600 font-semibold" style="display:none;">Ładuje produkty...</span>
                     <button type="button" id="import-excel-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">📄 Załaduj z Excela</button>
                 </div>
             </div>
@@ -325,7 +326,7 @@
                 </button>
             </div>
 
-            {{-- KATALOG PRODUKTÓW --}}
+            {{-- DODAJ Z KATALOGU PRODUKTÓW --}}
             <table class="w-full border border-collapse text-xs">
                 <thead class="bg-gray-100">
                     <tr>
@@ -802,7 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Globalny checkbox "Zaznacz wszystkie" w tabeli produktów do dodania
     if (selectAllAddCheckbox) {
         selectAllAddCheckbox.addEventListener('change', function() {
-            const checkboxes = selectedProductsTable.querySelectorAll('.selected-product-checkbox');
+            // Obsługa zarówno produktów z katalogu jak i z importu Excel
+            const checkboxes = selectedProductsTable.querySelectorAll('.selected-product-checkbox, .row-checkbox-add');
             checkboxes.forEach(cb => {
                 cb.checked = this.checked;
             });
@@ -816,10 +818,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     addAllBtn.addEventListener('click', () => {
-        if (Object.keys(selectedProducts).length === 0) {
+        const loadingInfo = document.getElementById('add-all-loading-info');
+        // Sprawdź czy są produkty z katalogu lub zaimportowane z Excel
+        const excelRows = selectedProductsTable.querySelectorAll('tr');
+        const checkedExcelRows = Array.from(excelRows).filter(row => {
+            const checkbox = row.querySelector('.row-checkbox-add');
+            return checkbox && checkbox.checked;
+        });
+
+        if (Object.keys(selectedProducts).length === 0 && checkedExcelRows.length === 0) {
+            if (loadingInfo) loadingInfo.style.display = 'none';
             alert('Zaznacz przynajmniej jeden produkt');
             return;
         }
+        if (loadingInfo) loadingInfo.style.display = 'inline';
+
+        let delay = 0;
+        let addedCount = 0;
 
         // Pobierz aktualne wartości dostawców, cen, walut i kategorii z pól przed wysłaniem
         Object.keys(selectedProducts).forEach(name => {
@@ -842,8 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Dodaj wszystkie produkty
-        let delay = 0;
+        // Dodaj wszystkie produkty z katalogu
         Object.entries(selectedProducts).forEach(([name, data]) => {
             setTimeout(() => {
                 const formData = new FormData();
@@ -870,10 +884,61 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(() => {
-                    // Zaznaczony produkt został dodany
+                    addedCount++;
                 })
                 .catch(err => {
                     console.error('Błąd:', err);
+                });
+            }, delay);
+            delay += 300; // 300ms między żądaniami
+        });
+
+        // Dodaj wszystkie zaznaczone produkty z importu Excel
+        checkedExcelRows.forEach(row => {
+            setTimeout(() => {
+                const formData = new FormData();
+                
+                // Pobierz dane z pól formularza w wierszu
+                const nameInput = row.querySelector('input[name*="[name]"]');
+                const supplierSelect = row.querySelector('select[name*="[supplier]"]');
+                const priceInput = row.querySelector('input[name*="[net_price]"]');
+                const currencySelect = row.querySelector('select[name*="[currency]"]');
+                const categorySelect = row.querySelector('select[name*="[category_id]"]');
+                const quantityInput = row.querySelector('input[name*="[quantity]"]');
+                const descriptionInput = row.querySelector('input[name*="[description]"]');
+                const locationInput = row.querySelector('input[name*="[location]"]');
+                const qrCodeInput = row.querySelector('input[name*="[qr_code]"]');
+                
+                if (nameInput) formData.append('name', nameInput.value);
+                if (supplierSelect) formData.append('supplier', supplierSelect.value);
+                if (priceInput && priceInput.value) formData.append('net_price', priceInput.value);
+                if (currencySelect) formData.append('currency', currencySelect.value);
+                if (categorySelect) formData.append('category_id', categorySelect.value);
+                if (quantityInput) formData.append('quantity', quantityInput.value);
+                if (descriptionInput) formData.append('description', descriptionInput.value);
+                if (locationInput) formData.append('location', locationInput.value);
+                if (qrCodeInput) formData.append('qr_code', qrCodeInput.value);
+
+                fetch('{{ route('parts.add') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Błąd podczas dodawania');
+                    return response.json();
+                })
+                .then(() => {
+                    addedCount++;
+                    // Usuń wiersz po pomyślnym dodaniu
+                    row.remove();
+                })
+                .catch(err => {
+                    console.error('Błąd:', err);
+                    alert('Błąd podczas dodawania produktu: ' + (nameInput ? nameInput.value : 'nieznany'));
                 });
             }, delay);
             delay += 300; // 300ms między żądaniami
@@ -884,10 +949,12 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedProducts = {};
             catalogCheckboxes.forEach(cb => cb.checked = false);
             updateSelectedProductsDisplay();
-            
-            // Zapamiętaj że katalog ma być otwarty
-            localStorage.setItem('katalogOtwarty', 'true');
-            window.location.reload();
+            if (loadingInfo) loadingInfo.style.display = 'none';
+            if (addedCount > 0) {
+                // Zapamiętaj że katalog ma być otwarty
+                localStorage.setItem('katalogOtwarty', 'true');
+                window.location.reload();
+            }
         }, delay + 500);
     });
 
@@ -1451,11 +1518,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Dodaj produkty do katalogu
                 if (data.products && data.products.length > 0) {
+                    let existingCount = 0;
+                    let newCount = 0;
+                    
                     data.products.forEach(product => {
+                        if (product.is_existing) {
+                            existingCount++;
+                        } else {
+                            newCount++;
+                        }
                         addProductToCatalog(product);
                     });
 
-                    alert(`✅ Zaimportowano ${data.products.length} produktów do katalogu`);
+                    let message = `✅ Zaimportowano ${data.products.length} produktów do katalogu`;
+                    if (existingCount > 0 && newCount > 0) {
+                        message += `\n\n📦 ${existingCount} produkt(ów) już istnieje w bazie - zostanie zwiększona tylko ilość\n🆕 ${newCount} nowy(ch) produkt(ów)`;
+                    } else if (existingCount > 0) {
+                        message += `\n\n📦 Wszystkie produkty już istnieją w bazie - zostanie zwiększona tylko ilość`;
+                    } else {
+                        message += `\n\n🆕 Wszystkie produkty są nowe`;
+                    }
+                    
+                    alert(message);
                 } else {
                     alert('✅ Import zakończony, ale nie znaleziono produktów do dodania');
                 }
@@ -1480,13 +1564,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const rowCount = catalogTable.querySelectorAll('tr').length;
         
+        // Określ klasę CSS na podstawie tego czy produkt już istnieje
+        const rowClass = product.is_existing ? 'bg-blue-50' : '';
+        const existingBadge = product.is_existing ? '<span class="text-xs text-blue-600 font-semibold ml-1" title="Produkt już istnieje w bazie - zostanie zwiększona tylko ilość">📦 ISTNIEJE</span>' : '';
+        
         const newRow = document.createElement('tr');
+        newRow.className = rowClass;
         newRow.innerHTML = `
             <td class="border p-1 text-center">
                 <input type="checkbox" class="row-checkbox-add w-4 h-4 cursor-pointer">
             </td>
             <td class="border p-1 text-left">
                 <input type="text" name="catalog_products[${rowCount}][name]" value="${escapeHtml(product.name)}" class="w-full px-2 py-1 border rounded text-xs" required>
+                ${existingBadge}
             </td>
             <td class="border p-1 text-left">
                 <select name="catalog_products[${rowCount}][supplier]" class="w-full px-1 py-1 border rounded text-xs">
@@ -1510,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="text-xs">-</span>
             </td>
             <td class="border p-1 text-center">
-                <input type="number" name="catalog_products[${rowCount}][quantity]" value="${product.quantity || 1}" min="1" class="w-16 px-1 py-1 border rounded text-xs" required>
+                <input type="number" name="catalog_products[${rowCount}][quantity]" value="${product.quantity ?? 0}" min="0" class="w-16 px-1 py-1 border rounded text-xs" required>
             </td>
             <td class="border p-1 text-center">
                 <button type="button" class="remove-catalog-product bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>

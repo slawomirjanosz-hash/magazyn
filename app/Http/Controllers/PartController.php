@@ -637,7 +637,7 @@ class PartController extends Controller
             'name'        => 'required|string',
             'description' => 'nullable|string',
             'supplier'    => 'nullable|string',
-            'quantity'    => 'required|integer|min:1',
+            'quantity'    => 'required|integer|min:0',
             'minimum_stock' => 'nullable|integer|min:0',
             'location'    => 'nullable|string|max:10',
             'category_id' => 'required|exists:categories,id',
@@ -662,6 +662,9 @@ class PartController extends Controller
             ]
         );
 
+        // Sprawdź czy produkt był już w bazie (wasRecentlyCreated = false oznacza że już istniał)
+        $wasExisting = !$part->wasRecentlyCreated;
+
         // aktualizacja opisu, dostawcy, ceny, waluty, lokalizacji, kodu QR i kategorii (jeśli zmieniony / wpisany)
         if (array_key_exists('description', $data)) {
             $part->description = $data['description'];
@@ -684,12 +687,17 @@ class PartController extends Controller
         if (array_key_exists('category_id', $data)) {
             $part->category_id = $data['category_id'];
         }
+        
+        // Aktualizuj kod QR TYLKO jeśli został przekazany ORAZ (produkt jest nowy LUB nie ma jeszcze kodu QR)
         if (array_key_exists('qr_code', $data) && $data['qr_code']) {
-            $part->qr_code = $data['qr_code'];
+            // Jeśli produkt już istniał i ma swój kod QR, NIE nadpisuj go
+            if (!$wasExisting || !$part->qr_code) {
+                $part->qr_code = $data['qr_code'];
+            }
         }
         
-        // Automatyczne generowanie kodu QR jeśli jeszcze nie istnieje
-        if (!$part->qr_code) {
+        // Automatyczne generowanie kodu QR TYLKO dla nowych produktów bez kodu QR
+        if (!$wasExisting && !$part->qr_code) {
             $qrCode = $this->autoGenerateQrCode($data['name'], $data['location'] ?? null);
             if ($qrCode) {
                 $part->qr_code = $qrCode;
@@ -847,8 +855,10 @@ class PartController extends Controller
     // USUWANIE CZĘŚCI (❌ z katalogu)
     public function destroy(Part $part)
     {
-        // Nie pozwalaj usunąć części, jeśli jej stan > 0
-        if ($part->quantity > 0) {
+
+        // Pozwól superadminowi (is_admin) usuwać nawet jeśli quantity > 0
+        $user = auth()->user();
+        if ($part->quantity > 0 && (!$user || !$user->is_admin)) {
             return redirect()->back()
                 ->with('error', "Nie można usunąć '{$part->name}' — stan wynosi {$part->quantity}. Najpierw zmniejsz stan na 0.");
         }
@@ -867,39 +877,44 @@ class PartController extends Controller
             'part_ids.*' => 'exists:parts,id',
         ]);
 
-        // Rozdziel części na usuwalne (stan = 0) i nieusuwalne (stan > 0)
-        $removableParts = Part::whereIn('id', $request->part_ids)
-            ->where('quantity', 0)
-            ->get();
-
-        $unremovableParts = Part::whereIn('id', $request->part_ids)
-            ->where('quantity', '>', 0)
-            ->get();
-
-        // Usuń tylko części ze stanem 0
-        $count = $removableParts->count();
-        if ($count > 0) {
-            Part::whereIn('id', $removableParts->pluck('id'))->delete();
-        }
-
-        // Przygotuj komunikaty
+        $user = auth()->user();
         $response = redirect()->back();
-        
-        if ($count > 0) {
-            $names = $removableParts->pluck('name')->implode(', ');
-            $response->with('success', "Usunięto: {$names}");
-        }
 
-        if ($unremovableParts->count() > 0) {
-            $unremovableCount = $unremovableParts->count();
-            $partWord = match($unremovableCount % 10) {
-                1 => 'część',
-                default => 'części'
-            };
-            $errorMsg = "Nie usunięto {$unremovableCount} {$partWord} – stan nie wynosi zero.";
-            $response->with('error', $errorMsg);
-        }
+        if ($user && $user->is_admin) {
+            // Superadmin może usunąć wszystko
+            $parts = Part::whereIn('id', $request->part_ids)->get();
+            $count = $parts->count();
+            if ($count > 0) {
+                Part::whereIn('id', $parts->pluck('id'))->delete();
+                $names = $parts->pluck('name')->implode(', ');
+                $response->with('success', "Usunięto: {$names}");
+            }
+        } else {
+            // Zwykły użytkownik - tylko stan 0
+            $removableParts = Part::whereIn('id', $request->part_ids)
+                ->where('quantity', 0)
+                ->get();
 
+            $unremovableParts = Part::whereIn('id', $request->part_ids)
+                ->where('quantity', '>', 0)
+                ->get();
+
+            $count = $removableParts->count();
+            if ($count > 0) {
+                Part::whereIn('id', $removableParts->pluck('id'))->delete();
+                $names = $removableParts->pluck('name')->implode(', ');
+                $response->with('success', "Usunięto: {$names}");
+            }
+            if ($unremovableParts->count() > 0) {
+                $unremovableCount = $unremovableParts->count();
+                $partWord = match($unremovableCount % 10) {
+                    1 => 'część',
+                    default => 'części'
+                };
+                $errorMsg = "Nie usunięto {$unremovableCount} {$partWord} – stan nie wynosi zero.";
+                $response->with('error', $errorMsg);
+            }
+        }
         return $response;
     }
 
@@ -2934,16 +2949,38 @@ class PartController extends Controller
                 // Pobierz dane z wiersza
                 $description = isset($colIndexes['opis']) ? trim($row[$colIndexes['opis']] ?? '') : '';
                 $supplierName = isset($colIndexes['dost']) ? trim($row[$colIndexes['dost']] ?? '') : '';
-                $price = isset($colIndexes['cena']) ? floatval($row[$colIndexes['cena']] ?? 0) : 0;
-                $currency = isset($colIndexes['waluta']) ? strtoupper(trim($row[$colIndexes['waluta']] ?? 'PLN')) : 'PLN';
+                
+                // Normalizuj cenę - obsługa przecinka jako separatora dziesiętnego
+                $priceRaw = isset($colIndexes['cena']) ? trim($row[$colIndexes['cena']] ?? '') : '';
+                $priceRaw = str_replace(',', '.', $priceRaw); // Zamień przecinek na kropkę
+                $priceRaw = preg_replace('/[^\d.]/', '', $priceRaw); // Usuń wszystkie znaki oprócz cyfr i kropki
+                $price = floatval($priceRaw);
+                
+                // Normalizuj walutę - obsługa różnych formatów
+                $currencyRaw = isset($colIndexes['waluta']) ? trim($row[$colIndexes['waluta']] ?? '') : '';
+                $currency = null;
+                
+                if (!empty($currencyRaw)) {
+                    $currencyRaw = strtoupper($currencyRaw);
+                    
+                    // Mapowanie różnych formatów walut
+                    if (in_array($currencyRaw, ['PLN', 'ZŁ', 'ZŁOTY', 'ZŁOTE', 'ZLOTY', 'ZLOTE', 'ZL'])) {
+                        $currency = 'PLN';
+                    } elseif (in_array($currencyRaw, ['EUR', 'EURO', '€'])) {
+                        $currency = 'EUR';
+                    } elseif (in_array($currencyRaw, ['$', 'USD', 'DOLLAR', 'DOLAR'])) {
+                        $currency = '$';
+                    }
+                }
+                
+                // Jeśli nie rozpoznano waluty, pozostaw null (zostanie ustawiona w bazie danych)
+                if (!$currency) {
+                    $currency = 'PLN'; // Domyślnie PLN jeśli pole puste
+                }
+                
                 $categoryName = isset($colIndexes['kategoria']) ? trim($row[$colIndexes['kategoria']] ?? '') : '';
                 $quantity = isset($colIndexes['ilosc']) ? intval($row[$colIndexes['ilosc']] ?? 1) : 1;
                 $location = isset($colIndexes['lokalizacja']) ? trim($row[$colIndexes['lokalizacja']] ?? '') : '';
-
-                // Walidacja waluty
-                if (!in_array($currency, ['PLN', 'EUR', '$'])) {
-                    $currency = 'PLN';
-                }
 
                 // Znajdź ID kategorii
                 $categoryId = null;
@@ -2971,8 +3008,17 @@ class PartController extends Controller
                     }
                 }
 
-                // Generuj unikalny kod QR dla każdego produktu
-                $qrCode = $this->autoGenerateQrCode($productName, $location);
+                // Sprawdź czy produkt już istnieje w bazie
+                $existingPart = Part::where('name', $productName)->first();
+                
+                // Generuj kod QR TYLKO dla nowych produktów
+                $qrCode = null;
+                if (!$existingPart) {
+                    $qrCode = $this->autoGenerateQrCode($productName, $location);
+                } else {
+                    // Dla istniejących produktów użyj ich obecnego kodu QR
+                    $qrCode = $existingPart->qr_code;
+                }
 
                 $products[] = [
                     'name' => $productName,
@@ -2981,9 +3027,10 @@ class PartController extends Controller
                     'net_price' => $price > 0 ? $price : null,
                     'currency' => $currency,
                     'category_id' => $categoryId,
-                    'quantity' => max(1, $quantity),
+                    'quantity' => $quantity,
                     'location' => $location ?: null,
-                    'qr_code' => $qrCode
+                    'qr_code' => $qrCode,
+                    'is_existing' => $existingPart ? true : false
                 ];
             }
 
