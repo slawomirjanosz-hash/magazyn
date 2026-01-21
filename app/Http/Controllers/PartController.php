@@ -3532,7 +3532,7 @@ class PartController extends Controller
                 ->get(),
         ];
         
-        $users = \App\Models\User::where('can_crm', true)->orWhere('is_admin', true)->get();
+        $users = \App\Models\User::where('can_crm', true)->orWhere('email', 'proximalumine@gmail.com')->get();
         
         return view('parts.crm', compact('companies', 'deals', 'tasks', 'activities', 'stats', 'users'));
     }

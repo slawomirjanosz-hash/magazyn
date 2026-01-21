@@ -39,7 +39,7 @@
         <!-- MENU -->
         @auth
         <nav class="flex gap-2 items-center flex-wrap justify-end">
-            @if(Auth::user()->is_admin || Auth::user()->can_settings)
+            @if(Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_settings)
                 <a href="{{ route('magazyn.settings') }}" class="px-3 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition whitespace-nowrap font-semibold">Ustawienia</a>
             @endif
             <div class="border-l border-gray-300 pl-2 flex items-center gap-2">
@@ -76,13 +76,13 @@
 
     @auth
         <div class="flex flex-col gap-4 justify-center items-center">
-            @if(Auth::user()->is_admin || Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_view_magazyn)
+            @if(Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_view_magazyn)
                 <a href="{{ route('magazyn.check') }}"
                    class="inline-block px-6 py-3 bg-blue-600 text-white rounded text-lg hover:bg-blue-700">
                     Wejdź do magazynu
                 </a>
             @endif
-            @if(Auth::user()->is_admin || Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_view_offers)
+            @if(Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_view_offers)
                 <a href="{{ route('offers') }}" class="inline-block px-6 py-3 bg-green-600 text-white rounded text-lg hover:bg-green-700 min-w-[220px]">
                     Wyceny i Oferty
                 </a>
@@ -92,7 +92,7 @@
                     Receptury
                 </a>
             @endif
-            @if(Auth::user()->is_admin || Auth::user()->can_crm)
+            @if(Auth::user()->email === 'proximalumine@gmail.com' || Auth::user()->can_crm)
                 <a href="{{ route('crm') }}" class="inline-block px-6 py-3 bg-purple-600 text-white rounded text-lg hover:bg-purple-700 min-w-[220px]">
                     👥 CRM
                 </a>

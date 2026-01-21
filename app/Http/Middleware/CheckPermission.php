@@ -16,8 +16,8 @@ class CheckPermission
 
         $user = auth()->user();
 
-        // Admin ma dostęp do wszystkiego
-        if ($user->is_admin) {
+        // Tylko super admin ma dostęp do wszystkiego
+        if ($user->email === 'proximalumine@gmail.com') {
             return $next($request);
         }
 

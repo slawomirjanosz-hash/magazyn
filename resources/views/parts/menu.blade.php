@@ -35,7 +35,7 @@
                     Start
                 </a>
 
-                @if(auth()->check() && (auth()->user()->is_admin || auth()->user()->can_view_recipes) && !request()->routeIs('magazyn*'))
+                @if(auth()->check() && (auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_view_recipes) && !request()->routeIs('magazyn*'))
                     <a href="{{ route('receptury') }}"
                        class="px-3 py-2 text-sm bg-purple-100 text-black rounded whitespace-nowrap">
                         🧪Receptury
@@ -78,7 +78,7 @@
                 @endif
             @endunless
 
-            @if(auth()->check() && auth()->user()->can_settings)
+            @if(auth()->check() && (auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings))
                 <a href="{{ route('magazyn.settings') }}"
                    class="px-3 py-2 text-sm bg-gray-200 text-black rounded whitespace-nowrap">
                     ⚙️Ustawienia

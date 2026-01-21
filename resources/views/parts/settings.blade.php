@@ -86,7 +86,7 @@
     @endif
 
     <!-- Sekcja: Zarządzanie kategoriami (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_categories)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_categories)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="categories-content">
             <span class="toggle-arrow text-lg">▶</span>
@@ -184,7 +184,7 @@
     @endif
 
     <!-- Sekcja: Zarządzanie dostawcami (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_suppliers)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_suppliers)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="suppliers-content">
             <span class="toggle-arrow text-lg">▶</span>
@@ -590,7 +590,7 @@
     @endif
 
     <!-- Sekcja: Dane Mojej Firmy (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_company)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_company)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="company-content">
             <span class="toggle-arrow text-lg">▶</span>
@@ -745,7 +745,7 @@
     @endif
 
     <!-- Sekcja: Zarządzanie użytkownikami (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_users)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_users)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="users-content">
             <span class="toggle-arrow text-lg">▶</span>
@@ -981,7 +981,7 @@
     @endif
 
     <!-- Sekcja: Ustawienia eksportu (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_export)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_export)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="export-settings-content">
             <span class="toggle-arrow text-lg">▶</span>
@@ -1001,7 +1001,7 @@
     @endif
 
     <!-- Sekcja: Inne Ustawienia (rozwijalna) -->
-    @if(auth()->user()->is_admin || auth()->user()->can_settings_other)
+    @if(auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings_other)
     <div class="bg-white rounded shadow mb-6">
         <button type="button" class="collapsible-btn w-full flex items-center gap-2 p-6 cursor-pointer hover:bg-gray-50" data-target="other-settings-content">
             <span class="toggle-arrow text-lg">▶</span>
