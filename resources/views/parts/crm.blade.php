@@ -28,33 +28,19 @@
 
 <div class="max-w-7xl mx-auto mt-6 mb-12">
     
-    <!-- NAGŁÓWEK I STATYSTYKI -->
+    <!-- NAGŁÓWEK -->
     <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <div class="flex items-center mb-6">
-            <a href="/" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 shadow rounded-full text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition mr-4">
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 19l-7-7 7-7' /></svg>
-                Powrót
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 shadow rounded-full text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition mr-4">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 19l-7-7 7-7' /></svg>
+                    Powrót
+                </a>
+                <h1 class="text-3xl font-bold text-gray-800">👥 CRM - System Zarządzania Relacjami z Klientami</h1>
+            </div>
+            <a href="{{ route('crm.settings') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                ⚙️ Ustawienia CRM
             </a>
-            <h1 class="text-3xl font-bold">👥 CRM - System Zarządzania Relacjami z Klientami</h1>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow">
-                <div class="text-4xl font-bold">{{ $stats['total_companies'] }}</div>
-                <div class="text-sm opacity-90">Firm w bazie</div>
-            </div>
-            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg shadow">
-                <div class="text-4xl font-bold">{{ $stats['active_deals'] }}</div>
-                <div class="text-sm opacity-90">Aktywnych szans</div>
-            </div>
-            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-lg shadow">
-                <div class="text-4xl font-bold">{{ number_format($stats['total_pipeline_value'], 0, ',', ' ') }} zł</div>
-                <div class="text-sm opacity-90">Wartość pipeline</div>
-            </div>
-            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-4 rounded-lg shadow">
-                <div class="text-4xl font-bold">{{ $stats['overdue_tasks'] }}</div>
-                <div class="text-sm opacity-90">Zadań po terminie</div>
-            </div>
         </div>
     </div>
 
@@ -62,9 +48,8 @@
     <div class="bg-white rounded-lg shadow">
         <div class="border-b border-gray-200 flex gap-1 p-2">
             <button class="tab-button active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-            <button class="tab-button" onclick="switchTab('companies')">🏢 Firmy</button>
             <button class="tab-button" onclick="switchTab('deals')">💼 Lejek Sprzedażowy</button>
-            <button class="tab-button" onclick="switchTab('tasks')">✅ Zadania</button>
+            <button class="tab-button" onclick="switchTab('companies')">🏢 Firmy</button>
             <button class="tab-button" onclick="switchTab('activities')">📝 Historia</button>
             <button class="tab-button" onclick="switchTab('reports')">📈 Raporty</button>
         </div>
@@ -82,86 +67,162 @@
                         <p class="text-sm">Dodaj pierwszą szansę w zakładce "Lejek Sprzedażowy"</p>
                     </div>
                 @else
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
-                        @foreach($stats['deals_by_stage'] as $stage)
-                            @php
-                                $stageNames = [
-                                    'nowy_lead' => 'Nowy Lead',
-                                    'kontakt' => 'Kontakt',
-                                    'wycena' => 'Wycena',
-                                    'negocjacje' => 'Negocjacje',
-                                    'wygrana' => 'Wygrana',
-                                ];
-                                $stageColors = [
-                                    'nowy_lead' => 'bg-gray-200',
-                                    'kontakt' => 'bg-blue-200',
-                                    'wycena' => 'bg-yellow-200',
-                                    'negocjacje' => 'bg-orange-200',
-                                    'wygrana' => 'bg-green-200',
-                                ];
-                            @endphp
-                            <div class="p-4 {{ $stageColors[$stage->stage] ?? 'bg-gray-100' }} rounded-lg text-center">
-                                <div class="text-lg font-bold">{{ $stageNames[$stage->stage] ?? $stage->stage }}</div>
-                                <div class="text-2xl font-bold my-2">{{ $stage->count }}</div>
-                                <div class="text-sm">{{ number_format($stage->total_value, 0, ',', ' ') }} zł</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            <!-- OSTATNIE WYGRANE -->
-            <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-3">🎉 Ostatnio Wygrane</h3>
-                @if($stats['recent_won_deals']->isEmpty())
-                    <div class="p-4 bg-gray-50 rounded text-center text-gray-500">
-                        <p>Brak wygranych szans</p>
-                    </div>
-                @else
-                    <div class="space-y-2">
-                        @foreach($stats['recent_won_deals'] as $deal)
-                            <div class="flex justify-between items-center p-3 bg-green-50 rounded border border-green-200">
-                                <div>
-                                    <div class="font-semibold">{{ $deal->name }}</div>
-                                    <div class="text-sm text-gray-600">{{ $deal->company->name ?? 'Brak firmy' }} • {{ $deal->actual_close_date->format('d.m.Y') }}</div>
-                                </div>
-                                <div class="text-lg font-bold text-green-700">{{ number_format($deal->value, 0, ',', ' ') }} zł</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            <!-- NADCHODZĄCE ZADANIA -->
-            <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-3">✅ Nadchodzące Zadania</h3>
-                @if($tasks->isEmpty())
-                    <div class="p-4 bg-gray-50 rounded text-center text-gray-500">
-                        <p>Brak zadań do wykonania</p>
-                    </div>
-                @else
-                    <div class="space-y-2">
-                        @foreach($tasks->take(5) as $task)
-                            <div class="flex justify-between items-center p-3 border rounded {{ $task->isOverdue() ? 'bg-red-50 border-red-200' : 'bg-gray-50' }}">
-                                <div>
-                                    <div class="font-semibold">{{ $task->title }}</div>
-                                    <div class="text-sm text-gray-600">
-                                        {{ $task->company->name ?? 'Brak firmy' }} • 
-                                        Przypisane: {{ $task->assignedTo->name ?? 'Nie przypisane' }}
+                    @php
+                        $stageNames = [
+                            'nowy_lead' => 'Nowy Lead',
+                            'kontakt' => 'Kontakt',
+                            'wycena' => 'Wycena',
+                            'negocjacje' => 'Negocjacje',
+                        ];
+                        $stageColors = [
+                            'nowy_lead' => 'bg-gray-100 border-gray-300',
+                            'kontakt' => 'bg-blue-50 border-blue-300',
+                            'wycena' => 'bg-yellow-50 border-yellow-300',
+                            'negocjacje' => 'bg-orange-50 border-orange-300',
+                        ];
+                    @endphp
+                    <div class="space-y-4">
+                        @foreach(['nowy_lead', 'kontakt', 'wycena', 'negocjacje'] as $stageName)
+                            @if($stats['deals_by_stage']->has($stageName))
+                                @php
+                                    $stageDeals = $stats['deals_by_stage'][$stageName];
+                                @endphp
+                                <div class="border rounded-lg p-4 {{ $stageColors[$stageName] ?? 'bg-gray-50 border-gray-300' }}">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex-shrink-0 text-center min-w-[120px]">
+                                            <div class="text-sm font-semibold text-gray-700">{{ $stageNames[$stageName] }}</div>
+                                            <div class="text-3xl font-bold text-gray-800 my-1">{{ $stageDeals->count() }}</div>
+                                            <div class="text-xs text-gray-600">{{ number_format($stageDeals->sum('value'), 0, ',', ' ') }} zł</div>
+                                        </div>
+                                        <div class="flex-1 flex gap-3 overflow-x-auto justify-center">
+                                            @foreach($stageDeals as $deal)
+                                                <div onclick="editDeal({{ $deal->id }})" class="flex-shrink-0 bg-white border border-gray-300 rounded p-3 shadow-sm min-w-[200px] max-w-[250px] cursor-pointer hover:shadow-md transition">
+                                                    <div class="font-semibold text-sm mb-1 truncate" title="{{ $deal->name }}">{{ $deal->name }}</div>
+                                                    <div class="text-xs text-gray-600 mb-1 truncate" title="{{ $deal->company->name ?? 'Brak firmy' }}">🏢 {{ $deal->company->name ?? 'Brak firmy' }}</div>
+                                                    <div class="text-xs text-gray-500">📅 {{ $deal->expected_close_date ? $deal->expected_close_date->format('d.m.Y') : 'Brak daty' }}</div>
+                                                    <div class="text-xs font-bold text-green-600 mt-1">{{ number_format($deal->value, 0, ',', ' ') }} {{ $deal->currency }}</div>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="text-sm {{ $task->isOverdue() ? 'text-red-600 font-bold' : 'text-gray-600' }}">
-                                    {{ $task->due_date ? $task->due_date->format('d.m.Y H:i') : 'Brak terminu' }}
-                                </div>
-                            </div>
+                            @endif
                         @endforeach
                     </div>
                 @endif
+            </div>
+
+            <!-- OSTATNIE WYGRANE/PRZEGRANE -->
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-3">🎯 Ostatnio Wygrane/Przegrane</h3>
+                @if($stats['recent_won_deals']->isEmpty())
+                    <div class="p-4 bg-gray-50 rounded text-center text-gray-500">
+                        <p>Brak zakończonych szans</p>
+                    </div>
+                @else
+                    <div class="space-y-2">
+                        @foreach($stats['recent_won_deals']->take(3) as $deal)
+                            <div onclick="editDeal({{ $deal->id }})" class="flex justify-between items-center p-3 rounded border cursor-pointer hover:shadow-md transition {{ $deal->stage === 'wygrana' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200' }}">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold">{{ $deal->name }}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded {{ $deal->stage === 'wygrana' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                            {{ $deal->stage === 'wygrana' ? '✓ Wygrana' : '✗ Przegrana' }}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-600">{{ $deal->company->name ?? 'Brak firmy' }} • {{ $deal->actual_close_date->format('d.m.Y') }}</div>
+                                </div>
+                                <div class="text-lg font-bold {{ $deal->stage === 'wygrana' ? 'text-green-700' : 'text-red-700' }}">{{ number_format($deal->value, 0, ',', ' ') }} zł</div>
+                            </div>
+                        @endforeach
+                        
+                        @if($stats['recent_won_deals']->count() > 3)
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-blue-600 hover:text-blue-800 font-medium p-3 bg-gray-50 rounded border border-gray-200">
+                                    Pokaż starsze ({{ $stats['recent_won_deals']->count() - 3 }})
+                                </summary>
+                                <div class="space-y-2 mt-2">
+                                    @foreach($stats['recent_won_deals']->slice(3) as $deal)
+                                        <div onclick="editDeal({{ $deal->id }})" class="flex justify-between items-center p-3 rounded border cursor-pointer hover:shadow-md transition {{ $deal->stage === 'wygrana' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200' }}">
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-semibold">{{ $deal->name }}</span>
+                                                    <span class="text-xs px-2 py-0.5 rounded {{ $deal->stage === 'wygrana' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                        {{ $deal->stage === 'wygrana' ? '✓ Wygrana' : '✗ Przegrana' }}
+                                                    </span>
+                                                </div>
+                                                <div class="text-sm text-gray-600">{{ $deal->company->name ?? 'Brak firmy' }} • {{ $deal->actual_close_date->format('d.m.Y') }}</div>
+                                            </div>
+                                            <div class="text-lg font-bold {{ $deal->stage === 'wygrana' ? 'text-green-700' : 'text-red-700' }}">{{ number_format($deal->value, 0, ',', ' ') }} zł</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            <!-- ZADANIA I PRZYPOMNIENIA -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">✅ Zadania i Przypomnienia</h3>
+                    <button onclick="showTaskModal()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">➕ Dodaj Zadanie</button>
+                </div>
+                
+                <table class="w-full border-collapse">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border p-2 text-left">Zadanie</th>
+                            <th class="border p-2 text-left">Typ</th>
+                            <th class="border p-2 text-left">Priorytet</th>
+                            <th class="border p-2 text-left">Status</th>
+                            <th class="border p-2 text-left">Termin</th>
+                            <th class="border p-2 text-left">Przypisane do</th>
+                            <th class="border p-2">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($tasks as $task)
+                            <tr class="hover:bg-gray-50 {{ $task->isOverdue() ? 'bg-red-50' : '' }}">
+                                <td class="border p-2">
+                                    <div class="font-semibold">{{ $task->title }}</div>
+                                    <div class="text-sm text-gray-600">{{ $task->company->name ?? '' }} {{ $task->deal ? '• ' . $task->deal->name : '' }}</div>
+                                </td>
+                                <td class="border p-2">{{ ucfirst(str_replace('_', ' ', $task->type)) }}</td>
+                                <td class="border p-2">
+                                    <span class="stage-badge 
+                                        {{ $task->priority === 'pilna' ? 'bg-red-100 text-red-800' : '' }}
+                                        {{ $task->priority === 'wysoka' ? 'bg-orange-100 text-orange-800' : '' }}
+                                        {{ $task->priority === 'normalna' ? 'bg-blue-100 text-blue-800' : '' }}
+                                        {{ $task->priority === 'niska' ? 'bg-gray-100 text-gray-800' : '' }}
+                                    ">
+                                        {{ ucfirst($task->priority) }}
+                                    </span>
+                                </td>
+                                <td class="border p-2">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</td>
+                                <td class="border p-2 {{ $task->isOverdue() ? 'text-red-600 font-bold' : '' }}">
+                                    {{ $task->due_date ? $task->due_date->format('d.m.Y H:i') : '-' }}
+                                </td>
+                                <td class="border p-2">{{ $task->assignedTo->name ?? 'Nie przypisane' }}</td>
+                                <td class="border p-2 text-center">
+                                    <button onclick="editTask({{ $task->id }})" class="text-blue-600 hover:underline">✏️</button>
+                                    <form action="{{ route('crm.task.delete', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Usunąć zadanie?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:underline">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" class="border p-4 text-center text-gray-500">Brak aktywnych zadań</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- TAB: FIRMY -->
-        <div id="tab-companies" class="tab-content p-6">
+        <!-- TAB: LEJEK SPRZEDAŻOWY -->
+        <div id="tab-deals" class="tab-content p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">🏢 Firmy / Kontakty</h2>
                 <button onclick="showCompanyModal()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">➕ Dodaj Firmę</button>
@@ -176,6 +237,8 @@
                         <th class="border p-2 text-left">Typ</th>
                         <th class="border p-2 text-left">Status</th>
                         <th class="border p-2 text-left">Opiekun</th>
+                        <th class="border p-2 text-left">Dodana przez</th>
+                        <th class="border p-2 text-center">W bazie dostawców</th>
                         <th class="border p-2">Akcje</th>
                     </tr>
                 </thead>
@@ -200,6 +263,19 @@
                             </td>
                             <td class="border p-2">{{ ucfirst($company->status) }}</td>
                             <td class="border p-2">{{ $company->owner->name ?? '-' }}</td>
+                            <td class="border p-2">
+                                <span class="text-sm text-gray-600">{{ $company->addedBy->name ?? '-' }}</span>
+                            </td>
+                            <td class="border p-2 text-center">
+                                @if($company->supplier_id)
+                                    <span class="text-green-600 font-bold" title="Firma jest w bazie dostawców/klientów">✓ W bazie</span>
+                                @else
+                                    <form action="{{ route('crm.company.addToSuppliers', $company->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-blue-600 hover:underline text-sm" title="Dodaj do bazy dostawców/klientów">➕ Dodaj do bazy</button>
+                                    </form>
+                                @endif
+                            </td>
                             <td class="border p-2 text-center">
                                 <button onclick="editCompany({{ $company->id }})" class="text-blue-600 hover:underline">✏️</button>
                                 <form action="{{ route('crm.company.delete', $company->id) }}" method="POST" class="inline" onsubmit="return confirm('Usunąć firmę?')">
@@ -209,14 +285,14 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="border p-4 text-center text-gray-500">Brak firm w bazie</td></tr>
+                        <tr><td colspan="9" class="border p-4 text-center text-gray-500">Brak firm w bazie</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- TAB: LEJEK SPRZEDAŻOWY -->
-        <div id="tab-deals" class="tab-content p-6">
+        <!-- TAB: FIRMY -->
+        <div id="tab-companies" class="tab-content p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">💼 Lejek Sprzedażowy - Szanse</h2>
                 <button onclick="showDealModal()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">➕ Dodaj Szansę</button>
@@ -232,6 +308,7 @@
                         <th class="border p-2 text-center">Szansa %</th>
                         <th class="border p-2 text-left">Oczekiwane zamknięcie</th>
                         <th class="border p-2 text-left">Opiekun</th>
+                        <th class="border p-2 text-left">Przypisani</th>
                         <th class="border p-2">Akcje</th>
                     </tr>
                 </thead>
@@ -258,6 +335,17 @@
                             <td class="border p-2 text-center">{{ $deal->probability }}%</td>
                             <td class="border p-2">{{ $deal->expected_close_date ? $deal->expected_close_date->format('d.m.Y') : '-' }}</td>
                             <td class="border p-2">{{ $deal->owner->name ?? '-' }}</td>
+                            <td class="border p-2">
+                                @if($deal->assignedUsers->count() > 0)
+                                    <div class="text-xs">
+                                        @foreach($deal->assignedUsers as $user)
+                                            <span class="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded mb-1">{{ $user->name }}</span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
                             <td class="border p-2 text-center">
                                 <button onclick="editDeal({{ $deal->id }})" class="text-blue-600 hover:underline">✏️</button>
                                 <form action="{{ route('crm.deal.delete', $deal->id) }}" method="POST" class="inline" onsubmit="return confirm('Usunąć szansę?')">
@@ -267,64 +355,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="border p-4 text-center text-gray-500">Brak szans sprzedażowych</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- TAB: ZADANIA -->
-        <div id="tab-tasks" class="tab-content p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">✅ Zadania i Przypomnienia</h2>
-                <button onclick="showTaskModal()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">➕ Dodaj Zadanie</button>
-            </div>
-            
-            <table class="w-full border-collapse">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="border p-2 text-left">Zadanie</th>
-                        <th class="border p-2 text-left">Typ</th>
-                        <th class="border p-2 text-left">Priorytet</th>
-                        <th class="border p-2 text-left">Status</th>
-                        <th class="border p-2 text-left">Termin</th>
-                        <th class="border p-2 text-left">Przypisane do</th>
-                        <th class="border p-2">Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($tasks as $task)
-                        <tr class="hover:bg-gray-50 {{ $task->isOverdue() ? 'bg-red-50' : '' }}">
-                            <td class="border p-2">
-                                <div class="font-semibold">{{ $task->title }}</div>
-                                <div class="text-sm text-gray-600">{{ $task->company->name ?? '' }} {{ $task->deal ? '• ' . $task->deal->name : '' }}</div>
-                            </td>
-                            <td class="border p-2">{{ ucfirst(str_replace('_', ' ', $task->type)) }}</td>
-                            <td class="border p-2">
-                                <span class="stage-badge 
-                                    {{ $task->priority === 'pilna' ? 'bg-red-100 text-red-800' : '' }}
-                                    {{ $task->priority === 'wysoka' ? 'bg-orange-100 text-orange-800' : '' }}
-                                    {{ $task->priority === 'normalna' ? 'bg-blue-100 text-blue-800' : '' }}
-                                    {{ $task->priority === 'niska' ? 'bg-gray-100 text-gray-800' : '' }}
-                                ">
-                                    {{ ucfirst($task->priority) }}
-                                </span>
-                            </td>
-                            <td class="border p-2">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</td>
-                            <td class="border p-2 {{ $task->isOverdue() ? 'text-red-600 font-bold' : '' }}">
-                                {{ $task->due_date ? $task->due_date->format('d.m.Y H:i') : '-' }}
-                            </td>
-                            <td class="border p-2">{{ $task->assignedTo->name ?? 'Nie przypisane' }}</td>
-                            <td class="border p-2 text-center">
-                                <button onclick="editTask({{ $task->id }})" class="text-blue-600 hover:underline">✏️</button>
-                                <form action="{{ route('crm.task.delete', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Usunąć zadanie?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline">🗑️</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="7" class="border p-4 text-center text-gray-500">Brak aktywnych zadań</td></tr>
+                        <tr><td colspan="9" class="border p-4 text-center text-gray-500">Brak szans sprzedażowych</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -461,6 +492,29 @@
             </div>
         </div>
     </div>
+
+    <!-- STATYSTYKI NA DOLE STRONY -->
+    <div class="bg-white p-6 rounded-lg shadow mt-6 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">📊 Statystyki</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow">
+                <div class="text-4xl font-bold">{{ $stats['total_companies'] }}</div>
+                <div class="text-sm opacity-90">Firm w bazie</div>
+            </div>
+            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg shadow">
+                <div class="text-4xl font-bold">{{ $stats['active_deals'] }}</div>
+                <div class="text-sm opacity-90">Aktywnych szans</div>
+            </div>
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-lg shadow">
+                <div class="text-4xl font-bold text-white">{{ number_format($stats['total_pipeline_value'], 0, ',', ' ') }} zł</div>
+                <div class="text-sm opacity-90">Wartość pipeline</div>
+            </div>
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-4 rounded-lg shadow">
+                <div class="text-4xl font-bold">{{ $stats['overdue_tasks'] }}</div>
+                <div class="text-sm opacity-90">Zadań po terminie</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- MODALS -->
@@ -496,6 +550,26 @@ function showCompanyModal() {
         <form method="POST" action="{{ route('crm.company.add') }}" id="company-form">
             @csrf
             <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2 bg-green-50 border border-green-200 rounded p-3">
+                    <label class="block mb-1 font-semibold">🔗 Wybierz istniejącą firmę z bazy dostawców/klientów</label>
+                    <select id="supplier-select" onchange="fillCompanyFromSupplier()" class="w-full border rounded px-3 py-2">
+                        <option value="">-- Wybierz firmę z bazy lub wypełnij ręcznie --</option>
+                        @foreach($availableSuppliers as $supplier)
+                            <option value="{{ $supplier->id }}" 
+                                data-name="{{ $supplier->name }}" 
+                                data-short="{{ $supplier->short_name }}"
+                                data-nip="{{ $supplier->nip ?? '' }}"
+                                data-email="{{ $supplier->email ?? '' }}"
+                                data-phone="{{ $supplier->phone ?? '' }}"
+                                data-address="{{ $supplier->address ?? '' }}"
+                                data-city="{{ $supplier->city ?? '' }}"
+                                data-postal="{{ $supplier->postal_code ?? '' }}">
+                                {{ $supplier->short_name }} - {{ $supplier->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <input type="hidden" name="supplier_id" id="supplier-id">
+                </div>
                 <div><label class="block mb-1 font-semibold">Nazwa *</label><input type="text" name="name" id="company-name" required class="w-full border rounded px-3 py-2"></div>
                 <div><label class="block mb-1 font-semibold">NIP</label><input type="text" name="nip" id="company-nip" class="w-full border rounded px-3 py-2"></div>
                 <div><label class="block mb-1 font-semibold">Email</label><input type="email" name="email" id="company-email" class="w-full border rounded px-3 py-2"></div>
@@ -573,6 +647,17 @@ function showDealModal() {
                             <option value="{{ $user->id }}">{{ $user->name }}</option>
                         @endforeach
                     </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block mb-1 font-semibold">Przypisani użytkownicy (szansa będzie widoczna dla nich)</label>
+                    <div class="border rounded px-3 py-2 max-h-32 overflow-y-auto">
+                        @foreach($users as $user)
+                            <label class="flex items-center py-1 hover:bg-gray-50">
+                                <input type="checkbox" name="assigned_users[]" value="{{ $user->id }}" class="mr-2">
+                                {{ $user->name }}
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
                 <div class="col-span-2"><label class="block mb-1 font-semibold">Opis</label><textarea name="description" rows="3" class="w-full border rounded px-3 py-2"></textarea></div>
             </div>
@@ -767,6 +852,33 @@ async function searchByNip() {
     }
 }
 
+function fillCompanyFromSupplier() {
+    const select = document.getElementById('supplier-select');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        // Fill form with supplier data
+        document.getElementById('company-name').value = selectedOption.getAttribute('data-name') || '';
+        document.getElementById('company-nip').value = selectedOption.getAttribute('data-nip') || '';
+        document.getElementById('company-email').value = selectedOption.getAttribute('data-email') || '';
+        document.getElementById('company-phone').value = selectedOption.getAttribute('data-phone') || '';
+        document.getElementById('company-address').value = selectedOption.getAttribute('data-address') || '';
+        document.getElementById('company-city').value = selectedOption.getAttribute('data-city') || '';
+        document.getElementById('company-postal').value = selectedOption.getAttribute('data-postal') || '';
+        document.getElementById('supplier-id').value = selectedOption.value;
+    } else {
+        // Clear form
+        document.getElementById('company-name').value = '';
+        document.getElementById('company-nip').value = '';
+        document.getElementById('company-email').value = '';
+        document.getElementById('company-phone').value = '';
+        document.getElementById('company-address').value = '';
+        document.getElementById('company-city').value = '';
+        document.getElementById('company-postal').value = '';
+        document.getElementById('supplier-id').value = '';
+    }
+}
+
 function editCompany(id) { 
     // Pobierz dane firmy
     fetch(`/crm/company/${id}/edit`)
@@ -829,6 +941,8 @@ function editDeal(id) {
     fetch(`/crm/deal/${id}/edit`)
         .then(response => response.json())
         .then(deal => {
+            const assignedUserIds = deal.assigned_users ? deal.assigned_users.map(u => u.id) : [];
+            
             document.getElementById('modal-content').innerHTML = `
                 <h3 class="text-xl font-bold mb-4">Edytuj Szansę Sprzedażową</h3>
                 <form method="POST" action="/crm/deal/${id}">
@@ -856,7 +970,19 @@ function editDeal(id) {
                                 <option value="przegrana" ${deal.stage === 'przegrana' ? 'selected' : ''}>Przegrana</option>
                             </select>
                         </div>
-                        <div><label class="block mb-1 font-semibold">Przewidywane zamknięcie</label><input type="date" name="expected_close_date" value="${deal.expected_close_date || ''}" class="w-full border rounded px-3 py-2"></div>
+                        <div><label class="block mb-1 font-semibold">Przewidywane zamknięcie</label><input type="date" name="expected_close_date" value="${deal.expected_close_date ? deal.expected_close_date.split('T')[0] : ''}" class="w-full border rounded px-3 py-2"></div>
+                        <div><label class="block mb-1 font-semibold">Rzeczywiste zamknięcie</label><input type="date" name="actual_close_date" value="${deal.actual_close_date ? deal.actual_close_date.split('T')[0] : ''}" class="w-full border rounded px-3 py-2"></div>
+                        <div class="col-span-2">
+                            <label class="block mb-1 font-semibold">Przypisani użytkownicy (szansa będzie widoczna dla nich)</label>
+                            <div class="border rounded px-3 py-2 max-h-32 overflow-y-auto">
+                                @foreach($users as $user)
+                                    <label class="flex items-center py-1 hover:bg-gray-50">
+                                        <input type="checkbox" name="assigned_users[]" value="{{ $user->id }}" ${assignedUserIds.includes({{ $user->id }}) ? 'checked' : ''} class="mr-2">
+                                        {{ $user->name }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
                         <div class="col-span-2"><label class="block mb-1 font-semibold">Opis</label><textarea name="description" rows="3" class="w-full border rounded px-3 py-2">${deal.description || ''}</textarea></div>
                     </div>
                     <div class="mt-4 flex gap-2 justify-end">

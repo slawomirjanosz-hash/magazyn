@@ -312,6 +312,7 @@ Route::middleware('auth')->group(function () {
     // CRM Routes (Main Catalog)
     Route::middleware('auth')->group(function () {
         Route::get('/crm', [PartController::class, 'crmView'])->name('crm');
+        Route::get('/crm/ustawienia', [PartController::class, 'crmSettingsView'])->name('crm.settings');
         
         // Test page for NIP search
         Route::get('/test-nip', function () {
@@ -349,6 +350,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/crm/activity', [PartController::class, 'addActivity'])->name('crm.activity.add');
         Route::put('/crm/activity/{id}', [PartController::class, 'updateActivity'])->name('crm.activity.update');
         Route::delete('/crm/activity/{id}', [PartController::class, 'deleteActivity'])->name('crm.activity.delete');
+        
+        // CRM Company to Suppliers
+        Route::post('/crm/company/{id}/add-to-suppliers', [PartController::class, 'addCrmCompanyToSuppliers'])->name('crm.company.addToSuppliers');
+        
+        // CRM Stages
+        Route::get('/crm/stage/{id}/edit', [PartController::class, 'getCrmStage'])->name('crm.stage.edit');
+        Route::post('/crm/stage', [PartController::class, 'addCrmStage'])->name('crm.stage.add');
+        Route::put('/crm/stage/{id}', [PartController::class, 'updateCrmStage'])->name('crm.stage.update');
+        Route::delete('/crm/stage/{id}', [PartController::class, 'deleteCrmStage'])->name('crm.stage.delete');
     });
     
     Route::post('/magazyn/zamowienia/create', [PartController::class, 'createOrder'])->name('magazyn.order.create')->middleware('permission:orders');

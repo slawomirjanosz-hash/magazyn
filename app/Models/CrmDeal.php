@@ -12,7 +12,7 @@ class CrmDeal extends Model
     protected $fillable = [
         'name', 'company_id', 'supplier_id', 'value', 'currency', 
         'stage', 'probability', 'expected_close_date', 'actual_close_date',
-        'owner_id', 'description', 'lost_reason'
+        'owner_id', 'description', 'lost_reason', 'user_id'
     ];
 
     protected $casts = [
@@ -48,6 +48,16 @@ class CrmDeal extends Model
     public function activities()
     {
         return $this->hasMany(CrmActivity::class, 'deal_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'crm_deal_user');
     }
 
     public function getWeightedValueAttribute()

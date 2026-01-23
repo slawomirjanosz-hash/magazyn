@@ -12,7 +12,7 @@ class CrmCompany extends Model
     protected $fillable = [
         'name', 'nip', 'email', 'phone', 'website', 'address', 
         'city', 'postal_code', 'country', 'type', 'status', 
-        'notes', 'owner_id', 'source'
+        'notes', 'owner_id', 'source', 'supplier_id', 'added_by'
     ];
 
     protected $casts = [
@@ -24,6 +24,11 @@ class CrmCompany extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function deals()
@@ -39,5 +44,10 @@ class CrmCompany extends Model
     public function activities()
     {
         return $this->hasMany(CrmActivity::class, 'company_id');
+    }
+
+    public function addedBy()
+    {
+        return $this->belongsTo(User::class, 'added_by');
     }
 }

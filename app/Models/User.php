@@ -43,6 +43,7 @@ class User extends Authenticatable
         'can_delete_orders',
         'can_crm',
         'show_action_column',
+        'created_by',
     ];
 
     /**
@@ -108,5 +109,13 @@ class User extends Authenticatable
                 $user->short_name = 'AdmAdm';
             }
         });
+    }
+
+    /**
+     * Relacja do użytkownika, który utworzył ten rekord
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

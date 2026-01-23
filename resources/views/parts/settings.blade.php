@@ -871,7 +871,7 @@
             <div>
                 <p class="text-gray-600 mb-3">Lista użytkowników:</p>
                 <div class="flex flex-col gap-2">
-                    @forelse(\App\Models\User::where('email', '!=', 'proximalumine@gmail.com')->get() as $user)
+                    @forelse(\App\Models\User::where('email', '!=', 'proximalumine@gmail.com')->with('creator')->get() as $user)
                         <div class="px-3 py-2 bg-gray-100 rounded border border-gray-300 text-sm flex items-center justify-between">
                             <div class="flex-1">
                                 <p class="font-semibold flex items-center gap-2">
@@ -923,6 +923,9 @@
                                         @endif
                                     @endif
                                 </div>
+                                @if($user->creator)
+                                    <p class="text-gray-500 text-xs mt-1">Utworzył: <span class="font-semibold">{{ $user->creator->short_name ?? $user->creator->name }}</span></p>
+                                @endif
                             </div>
                             <div class="flex gap-2">
                                 @if(auth()->user()->is_admin && $user->email !== 'proximalumine@gmail.com')

@@ -1062,6 +1062,7 @@ class PartController extends Controller
             'phone' => $request->phone,
             'password' => $request->password ? Hash::make($request->password) : Hash::make(Str::random(32)),
             'can_view_catalog' => true, // Domyślnie dostęp do katalogu
+            'created_by' => auth()->id(), // Zapisz ID twórcy
         ]);
 
         // Wyczyść stare wartości z sesji
@@ -3502,8 +3503,22 @@ class PartController extends Controller
 
     public function crmView()
     {
-        $companies = \App\Models\CrmCompany::with('owner')->orderBy('name')->get();
-        $deals = \App\Models\CrmDeal::with(['company', 'owner'])->orderBy('created_at', 'desc')->get();
+        $userId = auth()->id();
+        
+        // Companies are visible to all users
+        $companies = \App\Models\CrmCompany::with('owner', 'addedBy')->orderBy('name')->get();
+        
+        // Deals: show only deals owned by user OR assigned to user
+        $deals = \App\Models\CrmDeal::with(['company', 'owner', 'user', 'assignedUsers'])
+            ->where(function($query) use ($userId) {
+                $query->where('user_id', $userId)
+                      ->orWhereHas('assignedUsers', function($q) use ($userId) {
+                          $q->where('user_id', $userId);
+                      });
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
         $tasks = \App\Models\CrmTask::with(['assignedTo', 'company', 'deal'])
             ->where('status', '!=', 'zakonczone')
             ->orderBy('due_date', 'asc')
@@ -3513,28 +3528,69 @@ class PartController extends Controller
             ->limit(50)
             ->get();
         
-        // Statystyki
+        // Etapy CRM
+        $crmStages = \DB::table('crm_stages')->orderBy('order')->get();
+        
+        // Statystyki - tylko dla szans użytkownika
         $stats = [
             'total_companies' => \App\Models\CrmCompany::count(),
-            'active_deals' => \App\Models\CrmDeal::whereNotIn('stage', ['wygrana', 'przegrana'])->count(),
-            'total_pipeline_value' => \App\Models\CrmDeal::whereNotIn('stage', ['wygrana', 'przegrana'])->sum('value'),
+            'active_deals' => \App\Models\CrmDeal::whereNotIn('stage', ['wygrana', 'przegrana'])
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhereHas('assignedUsers', function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          });
+                })
+                ->count(),
+            'total_pipeline_value' => \App\Models\CrmDeal::whereNotIn('stage', ['wygrana', 'przegrana'])
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhereHas('assignedUsers', function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          });
+                })
+                ->sum('value'),
             'overdue_tasks' => \App\Models\CrmTask::where('status', '!=', 'zakonczone')
                 ->where('due_date', '<', now())
                 ->count(),
-            'deals_by_stage' => \App\Models\CrmDeal::selectRaw('stage, COUNT(*) as count, SUM(value) as total_value')
+            'deals_by_stage' => \App\Models\CrmDeal::with(['company'])
                 ->whereNotIn('stage', ['wygrana', 'przegrana'])
-                ->groupBy('stage')
-                ->get(),
-            'recent_won_deals' => \App\Models\CrmDeal::where('stage', 'wygrana')
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhereHas('assignedUsers', function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          });
+                })
+                ->get()
+                ->groupBy('stage'),
+            'recent_won_deals' => \App\Models\CrmDeal::whereIn('stage', ['wygrana', 'przegrana'])
                 ->whereNotNull('actual_close_date')
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhereHas('assignedUsers', function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          });
+                })
                 ->orderBy('actual_close_date', 'desc')
-                ->limit(5)
                 ->get(),
         ];
         
         $users = \App\Models\User::where('can_crm', true)->orWhere('email', 'proximalumine@gmail.com')->get();
         
-        return view('parts.crm', compact('companies', 'deals', 'tasks', 'activities', 'stats', 'users'));
+        // Get suppliers not in CRM for selection
+        $availableSuppliers = \App\Models\Supplier::whereNotIn('id', function($query) {
+            $query->select('supplier_id')
+                  ->from('crm_companies')
+                  ->whereNotNull('supplier_id');
+        })->orderBy('short_name')->get();
+        
+        return view('parts.crm', compact('companies', 'deals', 'tasks', 'activities', 'stats', 'users', 'crmStages', 'availableSuppliers'));
+    }
+
+    public function crmSettingsView()
+    {
+        $crmStages = \DB::table('crm_stages')->orderBy('order')->get();
+        return view('parts.crm-settings', compact('crmStages'));
     }
 
     public function addCrmInteraction(Request $request)
@@ -3781,12 +3837,16 @@ class PartController extends Controller
             'notes' => 'nullable|string',
             'source' => 'nullable|string|max:100',
             'owner_id' => 'nullable|exists:users,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
         ]);
 
         // Normalizacja NIP przed zapisem
         if (!empty($validated['nip'])) {
             $validated['nip'] = preg_replace('/[^0-9]/', '', $validated['nip']);
         }
+        
+        // Set added_by to current user
+        $validated['added_by'] = auth()->id();
 
         \App\Models\CrmCompany::create($validated);
         return redirect()->route('crm')->with('success', 'Firma została dodana.');
@@ -3843,19 +3903,33 @@ class PartController extends Controller
             'expected_close_date' => 'nullable|date',
             'owner_id' => 'nullable|exists:users,id',
             'description' => 'nullable|string',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         if (!isset($validated['owner_id'])) {
             $validated['owner_id'] = auth()->id();
         }
+        
+        // Set user_id to current user (owner of the deal)
+        $validated['user_id'] = auth()->id();
+        
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
 
-        \App\Models\CrmDeal::create($validated);
+        $deal = \App\Models\CrmDeal::create($validated);
+        
+        // Attach assigned users
+        if (!empty($assignedUsers)) {
+            $deal->assignedUsers()->attach($assignedUsers);
+        }
+        
         return redirect()->route('crm')->with('success', 'Szansa sprzedażowa została dodana.');
     }
 
     public function getDeal($id)
     {
-        $deal = \App\Models\CrmDeal::findOrFail($id);
+        $deal = \App\Models\CrmDeal::with('assignedUsers')->findOrFail($id);
         return response()->json($deal);
     }
 
@@ -3875,9 +3949,25 @@ class PartController extends Controller
             'owner_id' => 'nullable|exists:users,id',
             'description' => 'nullable|string',
             'lost_reason' => 'nullable|string',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
+        
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+        
+        // Automatycznie ustaw actual_close_date gdy stage zmienia się na "wygrana" lub "przegrana"
+        if (in_array($validated['stage'], ['wygrana', 'przegrana']) && 
+            !in_array($deal->stage, ['wygrana', 'przegrana']) && 
+            empty($validated['actual_close_date'])) {
+            $validated['actual_close_date'] = now();
+        }
 
         $deal->update($validated);
+        
+        // Sync assigned users
+        $deal->assignedUsers()->sync($assignedUsers);
+        
         return redirect()->route('crm')->with('success', 'Szansa sprzedażowa została zaktualizowana.');
     }
 
@@ -3997,5 +4087,111 @@ class PartController extends Controller
         $activity = \App\Models\CrmActivity::findOrFail($id);
         $activity->delete();
         return redirect()->route('crm')->with('success', 'Aktywność została usunięta.');
+    }
+
+    // Dodaj firmę CRM do bazy dostawców/klientów
+    public function addCrmCompanyToSuppliers($id)
+    {
+        $crmCompany = \App\Models\CrmCompany::findOrFail($id);
+        
+        // Sprawdź czy firma już nie istnieje w dostawcach
+        $existingSupplier = \App\Models\Supplier::where('nip', $crmCompany->nip)
+            ->orWhere('name', $crmCompany->name)
+            ->first();
+        
+        if ($existingSupplier) {
+            $crmCompany->supplier_id = $existingSupplier->id;
+            $crmCompany->save();
+            return redirect()->route('crm')->with('success', 'Firma została powiązana z istniejącym dostawcą/klientem.');
+        }
+        
+        // Stwórz nowego dostawcę/klienta
+        $supplier = \App\Models\Supplier::create([
+            'name' => $crmCompany->name,
+            'short_name' => $this->generateShortName($crmCompany->name),
+            'nip' => $crmCompany->nip,
+            'email' => $crmCompany->email,
+            'phone' => $crmCompany->phone,
+            'address' => $crmCompany->address,
+            'city' => $crmCompany->city,
+            'postal_code' => $crmCompany->postal_code,
+            'is_supplier' => false,
+            'is_client' => true,
+        ]);
+        
+        $crmCompany->supplier_id = $supplier->id;
+        $crmCompany->save();
+        
+        return redirect()->route('crm')->with('success', 'Firma została dodana do bazy dostawców/klientów.');
+    }
+    
+    private function generateShortName($name)
+    {
+        $words = explode(' ', $name);
+        if (count($words) >= 2) {
+            return strtolower(substr($words[0], 0, 3) . substr($words[1], 0, 3));
+        }
+        return strtolower(substr($name, 0, 6));
+    }
+
+    // Zarządzanie etapami CRM
+    public function addCrmStage(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:crm_stages',
+            'color' => 'required|string|max:50',
+            'order' => 'required|integer|min:0',
+        ]);
+        
+        \DB::table('crm_stages')->insert([
+            'name' => $validated['name'],
+            'slug' => $validated['slug'],
+            'color' => $validated['color'],
+            'order' => $validated['order'],
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        return redirect()->route('crm.settings')->with('success', 'Etap został dodany.');
+    }
+    
+    public function updateCrmStage(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'color' => 'required|string|max:50',
+            'order' => 'required|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ]);
+        
+        \DB::table('crm_stages')->where('id', $id)->update([
+            'name' => $validated['name'],
+            'color' => $validated['color'],
+            'order' => $validated['order'],
+            'is_active' => $request->has('is_active') ? 1 : 0,
+            'updated_at' => now(),
+        ]);
+        
+        return redirect()->route('crm.settings')->with('success', 'Etap został zaktualizowany.');
+    }
+    
+    public function getCrmStage($id)
+    {
+        $stage = \DB::table('crm_stages')->where('id', $id)->first();
+        return response()->json($stage);
+    }
+    
+    public function deleteCrmStage($id)
+    {
+        $stage = \DB::table('crm_stages')->where('id', $id)->first();
+        
+        if (in_array($stage->slug, ['wygrana', 'przegrana'])) {
+            return redirect()->route('crm')->with('error', 'Nie można usunąć domyślnych etapów.');
+        }
+        
+        \DB::table('crm_stages')->where('id', $id)->delete();
+        return redirect()->route('crm.settings')->with('success', 'Etap został usunięty.');
     }
 }
