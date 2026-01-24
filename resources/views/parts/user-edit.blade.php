@@ -158,6 +158,48 @@
                     @endif
                 @endif
                 
+                <!-- Podrzędne uprawnienia Magazynu (wcięte) -->
+                <div class="ml-8 space-y-2">
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="can_view_catalog" 
+                            class="w-4 h-4"
+                            {{ $user->can_view_catalog ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>🔍 Katalog</strong>
+                            <p class="text-gray-600">Możliwość przeglądania katalogu produktów</p>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="can_add" 
+                            class="w-4 h-4"
+                            {{ $user->can_add ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>➕ Dodaj</strong>
+                            <p class="text-gray-600">Możliwość dodawania produktów do magazynu</p>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="can_orders" 
+                            class="w-4 h-4"
+                            {{ $user->can_orders ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>📦 Pobierz zamówienie</strong>
+                            <p class="text-gray-600">Możliwość zarządzania zamówieniami</p>
+                        </span>
+                    </label>
+                </div>
+                
                 @if($canEditOffers)
                 <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                     <input 
@@ -209,31 +251,32 @@
                     <input type="hidden" name="can_view_recipes" value="1">
                     @endif
                 @endif
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="can_view_catalog" 
-                        class="w-4 h-4"
-                        {{ $user->can_view_catalog ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>🔍 Katalog</strong>
-                        <p class="text-gray-600">Możliwość przeglądania katalogu produktów</p>
-                    </span>
-                </label>
 
+                @if($canEditCrm)
                 <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                     <input 
                         type="checkbox" 
-                        name="can_add" 
+                        name="can_crm" 
                         class="w-4 h-4"
-                        {{ $user->can_add ? 'checked' : '' }}
+                        {{ $user->can_crm ? 'checked' : '' }}
                     >
                     <span class="text-sm">
-                        <strong>➕ Dodaj</strong>
-                        <p class="text-gray-600">Możliwość dodawania produktów do magazynu</p>
+                        <strong>👥 CRM</strong>
+                        <p class="text-gray-600">Dostęp do systemu zarządzania relacjami z klientami</p>
                     </span>
                 </label>
+                @else
+                    @if($user->can_crm)
+                    <div class="flex items-center gap-3 p-3 border rounded bg-gray-50">
+                        <input type="checkbox" class="w-4 h-4" checked disabled>
+                        <span class="text-sm text-gray-500">
+                            <strong>👥 CRM</strong>
+                            <p class="text-gray-600">Dostęp do systemu zarządzania relacjami z klientami (tylko do odczytu)</p>
+                        </span>
+                    </div>
+                    <input type="hidden" name="can_crm" value="1">
+                    @endif
+                @endif
 
                 <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                     <input 
@@ -245,19 +288,6 @@
                     <span class="text-sm">
                         <strong>➖ Pobierz</strong>
                         <p class="text-gray-600">Możliwość pobierania produktów z magazynu</p>
-                    </span>
-                </label>
-
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="can_orders" 
-                        class="w-4 h-4"
-                        {{ $user->can_orders ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>📦 Zamówienia</strong>
-                        <p class="text-gray-600">Możliwość zarządzania zamówieniami</p>
                     </span>
                 </label>
 
@@ -352,32 +382,6 @@
                         <p class="text-gray-600">Możliwość usuwania zamówień</p>
                     </span>
                 </label>
-
-                @if($canEditCrm)
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="can_crm" 
-                        class="w-4 h-4"
-                        {{ $user->can_crm ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>👥 CRM</strong>
-                        <p class="text-gray-600">Dostęp do systemu zarządzania relacjami z klientami</p>
-                    </span>
-                </label>
-                @else
-                    @if($user->can_crm)
-                    <div class="flex items-center gap-3 p-3 border rounded bg-gray-50">
-                        <input type="checkbox" class="w-4 h-4" checked disabled>
-                        <span class="text-sm text-gray-500">
-                            <strong>👥 CRM</strong>
-                            <p class="text-gray-600">Dostęp do systemu zarządzania relacjami z klientami (tylko do odczytu)</p>
-                        </span>
-                    </div>
-                    <input type="hidden" name="can_crm" value="1">
-                    @endif
-                @endif
 
                 <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                     <input 
