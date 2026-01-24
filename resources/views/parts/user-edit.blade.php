@@ -137,6 +137,7 @@
                     <input 
                         type="checkbox" 
                         name="can_view_magazyn" 
+                        id="can_view_magazyn_checkbox"
                         class="w-4 h-4"
                         {{ $user->can_view_magazyn ? 'checked' : '' }}
                     >
@@ -159,12 +160,12 @@
                 @endif
                 
                 <!-- Podrzędne uprawnienia Magazynu (wcięte) -->
-                <div class="ml-8 space-y-2">
+                <div class="ml-8 space-y-2" id="magazyn_sub_permissions">
                     <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                         <input 
                             type="checkbox" 
                             name="can_view_catalog" 
-                            class="w-4 h-4"
+                            class="w-4 h-4 magazyn-sub-checkbox"
                             {{ $user->can_view_catalog ? 'checked' : '' }}
                         >
                         <span class="text-sm">
@@ -177,7 +178,7 @@
                         <input 
                             type="checkbox" 
                             name="can_add" 
-                            class="w-4 h-4"
+                            class="w-4 h-4 magazyn-sub-checkbox"
                             {{ $user->can_add ? 'checked' : '' }}
                         >
                         <span class="text-sm">
@@ -189,13 +190,52 @@
                     <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                         <input 
                             type="checkbox" 
+                            name="can_remove" 
+                            class="w-4 h-4 magazyn-sub-checkbox"
+                            {{ $user->can_remove ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>➖ Pobierz</strong>
+                            <p class="text-gray-600">Możliwość pobierania produktów z magazynu</p>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
                             name="can_orders" 
-                            class="w-4 h-4"
+                            class="w-4 h-4 magazyn-sub-checkbox"
                             {{ $user->can_orders ? 'checked' : '' }}
                         >
                         <span class="text-sm">
                             <strong>📦 Pobierz zamówienie</strong>
                             <p class="text-gray-600">Możliwość zarządzania zamówieniami</p>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="can_delete_orders" 
+                            class="w-4 h-4 magazyn-sub-checkbox"
+                            {{ $user->can_delete_orders ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>🗑️ Usuwanie zamówień</strong>
+                            <p class="text-gray-600">Możliwość usuwania zamówień</p>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="show_action_column" 
+                            class="w-4 h-4 magazyn-sub-checkbox"
+                            {{ $user->show_action_column ? 'checked' : '' }}
+                        >
+                        <span class="text-sm">
+                            <strong>👁️ Pokaż kolumnę akcja w Magazyn/Sprawdź</strong>
+                            <p class="text-gray-600">Wyświetlaj kolumnę "Akcja" w tabeli Magazyn/Sprawdź</p>
                         </span>
                     </label>
                 </div>
@@ -281,19 +321,6 @@
                 <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
                     <input 
                         type="checkbox" 
-                        name="can_remove" 
-                        class="w-4 h-4"
-                        {{ $user->can_remove ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>➖ Pobierz</strong>
-                        <p class="text-gray-600">Możliwość pobierania produktów z magazynu</p>
-                    </span>
-                </label>
-
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
                         name="can_settings" 
                         id="can_settings_checkbox"
                         class="w-4 h-4"
@@ -369,32 +396,6 @@
                         <span class="text-sm">⚡ Inne ustawienia</span>
                     </label>
                 </div>
-
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="can_delete_orders" 
-                        class="w-4 h-4"
-                        {{ $user->can_delete_orders ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>🗑️ Usuwanie zamówień</strong>
-                        <p class="text-gray-600">Możliwość usuwania zamówień</p>
-                    </span>
-                </label>
-
-                <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="show_action_column" 
-                        class="w-4 h-4"
-                        {{ $user->show_action_column ? 'checked' : '' }}
-                    >
-                    <span class="text-sm">
-                        <strong>👁️ Pokaż kolumnę akcja w Magazyn/Sprawdź</strong>
-                        <p class="text-gray-600">Wyświetlaj kolumnę "Akcja" w tabeli Magazyn/Sprawdź</p>
-                    </span>
-                </label>
             </div>
         </div>
 
@@ -448,6 +449,21 @@
                 settingsSubPermissions.classList.remove('hidden');
             } else {
                 settingsSubPermissions.classList.add('hidden');
+            }
+        });
+    }
+
+    // Automatyczne odznaczanie podrzędnych uprawnień Magazynu
+    var canViewMagazynCheckbox = document.getElementById('can_view_magazyn_checkbox');
+    var magazynSubCheckboxes = document.querySelectorAll('.magazyn-sub-checkbox');
+    
+    if (canViewMagazynCheckbox && magazynSubCheckboxes.length > 0) {
+        canViewMagazynCheckbox.addEventListener('change', function() {
+            if (!this.checked) {
+                // Jeśli Magazyn został odznaczony, odznacz wszystkie podrzędne
+                magazynSubCheckboxes.forEach(function(checkbox) {
+                    checkbox.checked = false;
+                });
             }
         });
     }
