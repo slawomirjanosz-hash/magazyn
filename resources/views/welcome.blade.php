@@ -71,7 +71,7 @@
     </h1>
 
     <p class="text-gray-600 mb-8">
-        System zarządzania częściami magazynowymi
+        System zarządzania
     </p>
 
     @auth
