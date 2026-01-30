@@ -43,23 +43,110 @@
             
             <h1 class="text-3xl font-bold mb-6 text-center mt-12">Edycja oferty</h1>
             
+            @if($offer->crmDeal)
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-blue-800">Oferta dla szansy CRM</p>
+                            <p class="mt-1 text-sm text-blue-700">
+                                <strong>{{ $offer->crmDeal->name }}</strong>
+                                @if($offer->crmDeal->company)
+                                    <span class="ml-2">• Firma: {{ $offer->crmDeal->company->name }}</span>
+                                @endif
+                                <span class="ml-2">• Wartość: {{ number_format($offer->crmDeal->value, 2, ',', ' ') }} {{ $offer->crmDeal->currency }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+            
             <form action="{{ route('offers.update', $offer) }}" method="POST" class="space-y-6" onkeydown="return event.key != 'Enter';">
                 @csrf
                 @method('PUT')
                 
+                @if($offer->crmDeal)
+                    <input type="hidden" name="crm_deal_id" value="{{ $offer->crmDeal->id }}">
+                @endif
+                
                 <!-- Podstawowe informacje -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nr oferty</label>
                         <input type="text" name="offer_number" value="{{ $offer->offer_number }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                        <input type="date" name="offer_date" value="{{ $offer->offer_date->format('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tytuł oferty</label>
                         <input type="text" name="offer_title" value="{{ $offer->offer_title }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                        <input type="date" name="offer_date" value="{{ $offer->offer_date->format('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+
+                <!-- Dane klienta -->
+                <div class="border border-blue-300 rounded p-4 bg-blue-50">
+                    <h3 class="text-lg font-semibold mb-4 text-blue-900">👤 Dane klienta</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wybierz z bazy lub wpisz ręcznie</label>
+                        <div class="flex gap-2">
+                            <select id="company-select" class="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="fillCustomerData(this.value)">
+                                <option value="">-- Wybierz firmę z CRM --</option>
+                                @foreach($companies as $company)
+                                    <option value="{{ $company->id }}" 
+                                        data-name="{{ $company->name }}"
+                                        data-nip="{{ $company->nip ?? '' }}"
+                                        data-address="{{ $company->address ?? '' }}"
+                                        data-city="{{ $company->city ?? '' }}"
+                                        data-postal="{{ $company->postal_code ?? '' }}"
+                                        data-phone="{{ $company->phone ?? '' }}"
+                                        data-email="{{ $company->email ?? '' }}">
+                                        {{ $company->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="button" onclick="clearCustomerData()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Wyczyść</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Nazwa firmy *</label>
+                            <input type="text" id="customer_name" name="customer_name" value="{{ $offer->customer_name }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">NIP</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="customer_nip" name="customer_nip" value="{{ $offer->customer_nip }}" class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <button type="button" onclick="fetchFromGUS()" class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs whitespace-nowrap">GUS</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Telefon</label>
+                            <input type="text" id="customer_phone" name="customer_phone" value="{{ $offer->customer_phone }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Adres</label>
+                            <input type="text" id="customer_address" name="customer_address" value="{{ $offer->customer_address }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="customer_email" name="customer_email" value="{{ $offer->customer_email }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Miasto</label>
+                            <input type="text" id="customer_city" name="customer_city" value="{{ $offer->customer_city }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Kod pocztowy</label>
+                            <input type="text" id="customer_postal_code" name="customer_postal_code" value="{{ $offer->customer_postal_code }}" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
                     </div>
                 </div>
 
@@ -78,43 +165,49 @@
                         </button>
                     </div>
                     <div id="services-content" class="p-4 hidden">
-                        <table class="w-full mb-4">
+                        <table class="w-full mb-4 text-xs">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="p-2 text-left w-16">Nr</th>
-                                    <th class="p-2 text-left">Nazwa</th>
-                                    <th class="p-2 text-left w-20">Ilość</th>
-                                    <th class="p-2 text-left">Dostawca</th>
-                                    <th class="p-2 text-left w-32">Cena (zł)</th>
-                                    <th class="p-2 text-left w-32">Wartość (zł)</th>
-                                    <th class="p-2 w-16"></th>
+                                    <th class="p-1 text-left w-10">Nr</th>
+                                    <th class="p-1 text-left">Nazwa</th>
+                                    <th class="p-1 text-left w-48">Typ</th>
+                                    <th class="p-1 text-left w-16">Ilość</th>
+                                    <th class="p-1 text-left">Dostawca</th>
+                                    <th class="p-1 text-left w-24">Cena (zł)</th>
+                                    <th class="p-1 text-left w-24">Wartość (zł)</th>
+                                    <th class="p-1 w-10"></th>
                                 </tr>
                             </thead>
                             <tbody id="services-table">
                                 @forelse($offer->services ?? [] as $index => $service)
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="{{ $index + 1 }}" readonly></td>
-                                    <td class="p-2"><input type="text" name="services[{{ $index }}][name]" value="{{ $service['name'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="{{ $service['quantity'] ?? 1 }}" name="services[{{ $index }}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="services" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="services[{{ $index }}][supplier]" value="{{ $service['supplier'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="services[{{ $index }}][price]" value="{{ $service['price'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="services" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="services[{{ $index }}][value]" value="{{ ($service['quantity'] ?? 1) * ($service['price'] ?? 0) }}" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="services" readonly></td>
-                                    <td class="p-2">@if($index > 0)<button type="button" onclick="removeRow(this, 'services')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="{{ $index + 1 }}" readonly></td>
+                                    <td class="p-1"><input type="text" name="services[{{ $index }}][name]" value="{{ $service['name'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="services[{{ $index }}][type]" value="{{ $service['type'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="{{ $service['quantity'] ?? 1 }}" name="services[{{ $index }}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="services" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="services[{{ $index }}][supplier]" value="{{ $service['supplier'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="services[{{ $index }}][price]" value="{{ $service['price'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="services" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="services[{{ $index }}][value]" value="{{ ($service['quantity'] ?? 1) * ($service['price'] ?? 0) }}" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="services" readonly></td>
+                                    <td class="p-1">@if($index > 0)<button type="button" onclick="removeRow(this, 'services')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
-                                    <td class="p-2"><input type="text" name="services[0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="1" name="services[0][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="services" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="services[0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="services[0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="services" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="services[0][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="services" readonly></td>
-                                    <td class="p-2"></td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="1" readonly></td>
+                                    <td class="p-1"><input type="text" name="services[0][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="services[0][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="1" name="services[0][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="services" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="services[0][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="services[0][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="services" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="services[0][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="services" readonly></td>
+                                    <td class="p-1"></td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
-                        <button type="button" onclick="addRow('services')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addRow('services')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                            <button type="button" onclick="openPartsCatalog('services')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">📂 Wybierz z katalogu</button>
+                        </div>
                         <div class="mt-4 text-right">
                             <span class="font-semibold">Suma: </span>
                             <span id="services-total" class="font-bold text-lg">0.00 zł</span>
@@ -137,43 +230,49 @@
                         </button>
                     </div>
                     <div id="works-content" class="p-4 hidden">
-                        <table class="w-full mb-4">
+                        <table class="w-full mb-4 text-xs">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="p-2 text-left w-16">Nr</th>
-                                    <th class="p-2 text-left">Nazwa</th>
-                                    <th class="p-2 text-left w-20">Ilość</th>
-                                    <th class="p-2 text-left">Dostawca</th>
-                                    <th class="p-2 text-left w-32">Cena (zł)</th>
-                                    <th class="p-2 text-left w-32">Wartość (zł)</th>
-                                    <th class="p-2 w-16"></th>
+                                    <th class="p-1 text-left w-10">Nr</th>
+                                    <th class="p-1 text-left">Nazwa</th>
+                                    <th class="p-1 text-left w-48">Typ</th>
+                                    <th class="p-1 text-left w-16">Ilość</th>
+                                    <th class="p-1 text-left">Dostawca</th>
+                                    <th class="p-1 text-left w-24">Cena (zł)</th>
+                                    <th class="p-1 text-left w-24">Wartość (zł)</th>
+                                    <th class="p-1 w-10"></th>
                                 </tr>
                             </thead>
                             <tbody id="works-table">
                                 @forelse($offer->works ?? [] as $index => $work)
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="{{ $index + 1 }}" readonly></td>
-                                    <td class="p-2"><input type="text" name="works[{{ $index }}][name]" value="{{ $work['name'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="{{ $work['quantity'] ?? 1 }}" name="works[{{ $index }}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="works" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="works[{{ $index }}][supplier]" value="{{ $work['supplier'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="works[{{ $index }}][price]" value="{{ $work['price'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="works" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="works[{{ $index }}][value]" value="{{ ($work['quantity'] ?? 1) * ($work['price'] ?? 0) }}" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="works" readonly></td>
-                                    <td class="p-2">@if($index > 0)<button type="button" onclick="removeRow(this, 'works')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="{{ $index + 1 }}" readonly></td>
+                                    <td class="p-1"><input type="text" name="works[{{ $index }}][name]" value="{{ $work['name'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="works[{{ $index }}][type]" value="{{ $work['type'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="{{ $work['quantity'] ?? 1 }}" name="works[{{ $index }}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="works" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="works[{{ $index }}][supplier]" value="{{ $work['supplier'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="works[{{ $index }}][price]" value="{{ $work['price'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="works" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="works[{{ $index }}][value]" value="{{ ($work['quantity'] ?? 1) * ($work['price'] ?? 0) }}" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="works" readonly></td>
+                                    <td class="p-1">@if($index > 0)<button type="button" onclick="removeRow(this, 'works')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
-                                    <td class="p-2"><input type="text" name="works[0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="1" name="works[0][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="works" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="works[0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="works[0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="works" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="works[0][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="works" readonly></td>
-                                    <td class="p-2"></td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="1" readonly></td>
+                                    <td class="p-1"><input type="text" name="works[0][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="works[0][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="1" name="works[0][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="works" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="works[0][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="works[0][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="works" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="works[0][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="works" readonly></td>
+                                    <td class="p-1"></td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
-                        <button type="button" onclick="addRow('works')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addRow('works')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                            <button type="button" onclick="openPartsCatalog('works')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">📂 Wybierz z katalogu</button>
+                        </div>
                         <div class="mt-4 text-right">
                             <span class="font-semibold">Suma: </span>
                             <span id="works-total" class="font-bold text-lg">0.00 zł</span>
@@ -196,43 +295,49 @@
                         </button>
                     </div>
                     <div id="materials-content" class="p-4 hidden">
-                        <table class="w-full mb-4">
+                        <table class="w-full mb-4 text-xs">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="p-2 text-left w-16">Nr</th>
-                                    <th class="p-2 text-left">Nazwa</th>
-                                    <th class="p-2 text-left w-20">Ilość</th>
-                                    <th class="p-2 text-left">Dostawca</th>
-                                    <th class="p-2 text-left w-32">Cena (zł)</th>
-                                    <th class="p-2 text-left w-32">Wartość (zł)</th>
-                                    <th class="p-2 w-16"></th>
+                                    <th class="p-1 text-left w-10">Nr</th>
+                                    <th class="p-1 text-left">Nazwa</th>
+                                    <th class="p-1 text-left w-48">Typ</th>
+                                    <th class="p-1 text-left w-16">Ilość</th>
+                                    <th class="p-1 text-left">Dostawca</th>
+                                    <th class="p-1 text-left w-24">Cena (zł)</th>
+                                    <th class="p-1 text-left w-24">Wartość (zł)</th>
+                                    <th class="p-1 w-10"></th>
                                 </tr>
                             </thead>
                             <tbody id="materials-table">
                                 @forelse($offer->materials ?? [] as $index => $material)
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="{{ $index + 1 }}" readonly></td>
-                                    <td class="p-2"><input type="text" name="materials[{{ $index }}][name]" value="{{ $material['name'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="{{ $material['quantity'] ?? 1 }}" name="materials[{{ $index }}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="materials" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="materials[{{ $index }}][supplier]" value="{{ $material['supplier'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="materials[{{ $index }}][price]" value="{{ $material['price'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="materials" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="materials[{{ $index }}][value]" value="{{ ($material['quantity'] ?? 1) * ($material['price'] ?? 0) }}" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="materials" readonly></td>
-                                    <td class="p-2">@if($index > 0)<button type="button" onclick="removeRow(this, 'materials')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="{{ $index + 1 }}" readonly></td>
+                                    <td class="p-1"><input type="text" name="materials[{{ $index }}][name]" value="{{ $material['name'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="materials[{{ $index }}][type]" value="{{ $material['type'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="{{ $material['quantity'] ?? 1 }}" name="materials[{{ $index }}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="materials" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="materials[{{ $index }}][supplier]" value="{{ $material['supplier'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="materials[{{ $index }}][price]" value="{{ $material['price'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="materials" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="materials[{{ $index }}][value]" value="{{ ($material['quantity'] ?? 1) * ($material['price'] ?? 0) }}" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="materials" readonly></td>
+                                    <td class="p-1">@if($index > 0)<button type="button" onclick="removeRow(this, 'materials')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
-                                    <td class="p-2"><input type="text" name="materials[0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" min="1" value="1" name="materials[0][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="materials" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="text" name="materials[0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="materials[0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="materials" onchange="calculateRowValue(this)"></td>
-                                    <td class="p-2"><input type="number" step="0.01" name="materials[0][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="materials" readonly></td>
-                                    <td class="p-2"></td>
+                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="1" readonly></td>
+                                    <td class="p-1"><input type="text" name="materials[0][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="text" name="materials[0][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" min="1" value="1" name="materials[0][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="materials" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="text" name="materials[0][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="materials[0][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="materials" onchange="calculateRowValue(this)"></td>
+                                    <td class="p-1"><input type="number" step="0.01" name="materials[0][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="materials" readonly></td>
+                                    <td class="p-1"></td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
-                        <button type="button" onclick="addRow('materials')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addRow('materials')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                            <button type="button" onclick="openPartsCatalog('materials')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">📂 Wybierz z katalogu</button>
+                        </div>
                         <div class="mt-4 text-right">
                             <span class="font-semibold">Suma: </span>
                             <span id="materials-total" class="font-bold text-lg">0.00 zł</span>
@@ -256,43 +361,49 @@
                                 </div>
                                 <div id="custom{{ $sectionIndex + 1 }}-content" class="p-4 hidden">
                                     <input type="hidden" name="custom_sections[{{ $sectionIndex + 1 }}][name]" value="{{ $customSection['name'] ?? '' }}">
-                                    <table class="w-full mb-4">
+                                    <table class="w-full mb-4 text-xs">
                                         <thead>
                                             <tr class="bg-gray-100">
-                                                <th class="p-2 text-left w-16">Nr</th>
-                                                <th class="p-2 text-left">Nazwa</th>
-                                                <th class="p-2 text-left w-20">Ilość</th>
-                                                <th class="p-2 text-left">Dostawca</th>
-                                                <th class="p-2 text-left w-32">Cena (zł)</th>
-                                                <th class="p-2 text-left w-32">Wartość (zł)</th>
-                                                <th class="p-2 w-16"></th>
+                                                <th class="p-1 text-left w-10">Nr</th>
+                                                <th class="p-1 text-left">Nazwa</th>
+                                                <th class="p-1 text-left w-48">Typ</th>
+                                                <th class="p-1 text-left w-16">Ilość</th>
+                                                <th class="p-1 text-left">Dostawca</th>
+                                                <th class="p-1 text-left w-24">Cena (zł)</th>
+                                                <th class="p-1 text-left w-24">Wartość (zł)</th>
+                                                <th class="p-1 w-10"></th>
                                             </tr>
                                         </thead>
                                         <tbody id="custom{{ $sectionIndex + 1 }}-table">
                                             @forelse($customSection['items'] ?? [] as $itemIndex => $item)
                                                 <tr>
-                                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="{{ $itemIndex + 1 }}" readonly></td>
-                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][name]" value="{{ $item['name'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                                    <td class="p-2"><input type="number" min="1" value="{{ $item['quantity'] ?? 1 }}" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
-                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][supplier]" value="{{ $item['supplier'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][price]" value="{{ $item['price'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
-                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][value]" value="{{ ($item['quantity'] ?? 1) * ($item['price'] ?? 0) }}" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="custom{{ $sectionIndex + 1 }}" readonly></td>
-                                                    <td class="p-2">@if($itemIndex > 0)<button type="button" onclick="removeRow(this, 'custom{{ $sectionIndex + 1 }}')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
+                                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="{{ $itemIndex + 1 }}" readonly></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][name]" value="{{ $item['name'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][type]" value="{{ $item['type'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="number" min="1" value="{{ $item['quantity'] ?? 1 }}" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][supplier]" value="{{ $item['supplier'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][price]" value="{{ $item['price'] ?? '' }}" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
+                                                    <td class="p-1"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][{{ $itemIndex }}][value]" value="{{ ($item['quantity'] ?? 1) * ($item['price'] ?? 0) }}" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="custom{{ $sectionIndex + 1 }}" readonly></td>
+                                                    <td class="p-1">@if($itemIndex > 0)<button type="button" onclick="removeRow(this, 'custom{{ $sectionIndex + 1 }}')" class="text-red-600 hover:text-red-800">✕</button>@endif</td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
-                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                                    <td class="p-2"><input type="number" min="1" value="1" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
-                                                    <td class="p-2"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
-                                                    <td class="p-2"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="custom{{ $sectionIndex + 1 }}" readonly></td>
-                                                    <td class="p-2"></td>
+                                                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="1" readonly></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="number" min="1" value="1" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
+                                                    <td class="p-1"><input type="text" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                                    <td class="p-1"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="custom{{ $sectionIndex + 1 }}" onchange="calculateRowValue(this)"></td>
+                                                    <td class="p-1"><input type="number" step="0.01" name="custom_sections[{{ $sectionIndex + 1 }}][items][0][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="custom{{ $sectionIndex + 1 }}" readonly></td>
+                                                    <td class="p-1"></td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
                                     </table>
-                                    <button type="button" onclick="addCustomRow('custom{{ $sectionIndex + 1 }}', {{ $sectionIndex + 1 }})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="addCustomRow('custom{{ $sectionIndex + 1 }}', {{ $sectionIndex + 1 }})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                                        <button type="button" onclick="openPartsCatalog('custom{{ $sectionIndex + 1 }}')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">📂 Wybierz z katalogu</button>
+                                    </div>
                                     <div class="mt-4 text-right">
                                         <span class="font-semibold">Suma: </span>
                                         <span id="custom{{ $sectionIndex + 1 }}-total" class="font-bold text-lg">0.00 zł</span>
@@ -378,6 +489,55 @@
             </form>
         </div>
     </main>
+
+    <!-- Modal katalogu części -->
+    <div id="parts-catalog-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-xl font-bold">Katalog części z magazynu</h3>
+                <button type="button" onclick="closePartsCatalog()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-4 border-b">
+                <input type="text" 
+                    id="catalog-search" 
+                    placeholder="Szukaj w katalogu..." 
+                    class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="flex-1 overflow-auto p-4">
+                <div id="catalog-loading" class="text-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="mt-2 text-gray-600">Wczytywanie katalogu...</p>
+                </div>
+                <div id="catalog-content" class="hidden">
+                    <div class="mb-2 flex items-center gap-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="select-all-parts" onchange="toggleSelectAll()" class="mr-2">
+                            Zaznacz wszystkie
+                        </label>
+                        <span id="selected-count" class="text-gray-600">Wybrano: 0</span>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="p-2 text-left w-10"></th>
+                                <th class="p-2 text-left">Nazwa</th>
+                                <th class="p-2 text-left">Opis</th>
+                                <th class="p-2 text-left">Dostawca</th>
+                                <th class="p-2 text-left w-20">Ilość</th>
+                                <th class="p-2 text-left w-24">Cena netto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-parts-list"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-2">
+                <button type="button" onclick="closePartsCatalog()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Anuluj</button>
+                <button type="button" onclick="addSelectedParts()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Dodaj wybrane</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-white text-center py-4 mt-8 border-t text-gray-400 text-sm">
         Powered by ProximaLumine
     </footer>
@@ -391,6 +551,11 @@
         
         let customSectionCounter = {{ count($offer->custom_sections ?? []) }};
         let customSections = [];
+        
+        // Zmienne dla katalogu części
+        let allParts = [];
+        let filteredParts = [];
+        let currentCatalogSection = 'materials';
         
         // Inicjalizuj istniejące sekcje niestandardowe
         @if(isset($offer->custom_sections) && is_array($offer->custom_sections))
@@ -411,6 +576,164 @@
                 calculateTotal(`custom${sectionNum}`);
             });
         });
+
+        // ===========================================
+        // OBSŁUGA KATALOGU CZĘŚCI
+        // ===========================================
+        async function openPartsCatalog(section = 'materials') {
+            currentCatalogSection = section;
+            const modal = document.getElementById('parts-catalog-modal');
+            modal.classList.remove('hidden');
+            
+            if (allParts.length === 0) {
+                await loadPartsCatalog();
+            }
+        }
+        
+        function closePartsCatalog() {
+            document.getElementById('parts-catalog-modal').classList.add('hidden');
+            document.getElementById('catalog-search').value = '';
+            document.querySelectorAll('.part-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('select-all-parts').checked = false;
+            updateSelectedCount();
+        }
+        
+        async function loadPartsCatalog() {
+            try {
+                const response = await fetch('/api/parts/catalog');
+                allParts = await response.json();
+                filteredParts = [...allParts];
+                
+                document.getElementById('catalog-loading').classList.add('hidden');
+                document.getElementById('catalog-content').classList.remove('hidden');
+                
+                renderCatalog();
+                setupCatalogSearch();
+            } catch (error) {
+                console.error('Błąd ładowania katalogu:', error);
+                alert('Nie udało się załadować katalogu części');
+            }
+        }
+        
+        function renderCatalog() {
+            const tbody = document.getElementById('catalog-parts-list');
+            
+            if (filteredParts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Nie znaleziono części</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filteredParts.map(part => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2">
+                        <input type="checkbox" 
+                            class="part-checkbox" 
+                            data-id="${part.id}"
+                            data-name="${escapeHtml(part.name)}"
+                            data-supplier="${escapeHtml(part.supplier || '')}"
+                            data-price="${part.net_price || 0}"
+                            onchange="updateSelectedCount()">
+                    </td>
+                    <td class="p-2 font-medium">${escapeHtml(part.name)}</td>
+                    <td class="p-2 text-gray-600">${escapeHtml(part.description || '-')}</td>
+                    <td class="p-2">${escapeHtml(part.supplier || '-')}</td>
+                    <td class="p-2">${part.quantity || 0}</td>
+                    <td class="p-2 font-medium">${parseFloat(part.net_price || 0).toFixed(2)} zł</td>
+                </tr>
+            `).join('');
+        }
+        
+        function setupCatalogSearch() {
+            const searchInput = document.getElementById('catalog-search');
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const query = this.value.toLowerCase();
+                    
+                    if (query === '') {
+                        filteredParts = [...allParts];
+                    } else {
+                        filteredParts = allParts.filter(part => 
+                            part.name.toLowerCase().includes(query) ||
+                            (part.description && part.description.toLowerCase().includes(query)) ||
+                            (part.supplier && part.supplier.toLowerCase().includes(query))
+                        );
+                    }
+                    
+                    renderCatalog();
+                    document.getElementById('select-all-parts').checked = false;
+                    updateSelectedCount();
+                }, 300);
+            });
+        }
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('select-all-parts');
+            const checkboxes = document.querySelectorAll('.part-checkbox');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            
+            updateSelectedCount();
+        }
+        
+        function updateSelectedCount() {
+            const count = document.querySelectorAll('.part-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = `Wybrano: ${count}`;
+        }
+        
+        function addSelectedParts() {
+            const selected = document.querySelectorAll('.part-checkbox:checked');
+            
+            if (selected.length === 0) {
+                alert('Nie wybrano żadnych części');
+                return;
+            }
+            
+            const section = currentCatalogSection;
+            const isCustomSection = section.startsWith('custom');
+            
+            selected.forEach(checkbox => {
+                const name = checkbox.dataset.name;
+                const supplier = checkbox.dataset.supplier;
+                const price = checkbox.dataset.price;
+                
+                // Pobierz tabelę dla odpowiedniej sekcji
+                const table = document.getElementById(`${section}-table`);
+                const rowCount = rowCounters[section];
+                
+                // Ustal odpowiednią nazwę pola w formularzu
+                let fieldPrefix;
+                if (isCustomSection) {
+                    const sectionNumber = section.replace('custom', '');
+                    fieldPrefix = `custom_sections[${sectionNumber}][items][${rowCount}]`;
+                } else {
+                    fieldPrefix = `${section}[${rowCount}]`;
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="${rowCount + 1}" readonly></td>
+                    <td class="p-1"><input type="text" name="${fieldPrefix}[name]" value="${name}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                    <td class="p-1"><input type="text" name="${fieldPrefix}[type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                    <td class="p-1"><input type="number" min="1" value="1" name="${fieldPrefix}[quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
+                    <td class="p-1"><input type="text" name="${fieldPrefix}[supplier]" value="${supplier}" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                    <td class="p-1"><input type="number" step="0.01" name="${fieldPrefix}[price]" value="${price}" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
+                    <td class="p-1"><input type="number" step="0.01" name="${fieldPrefix}[value]" value="${price}" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="${section}" readonly></td>
+                    <td class="p-1"><button type="button" onclick="removeRow(this, '${section}')" class="text-red-600 hover:text-red-800">✕</button></td>
+                `;
+                
+                table.appendChild(row);
+                rowCounters[section]++;
+            });
+            
+            updateRowNumbers(section);
+            calculateTotal(section);
+            closePartsCatalog();
+        }
 
         function toggleSection(section) {
             const content = document.getElementById(section + '-content');
@@ -447,13 +770,14 @@
             
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="${rowCount + 1}" readonly></td>
-                <td class="p-2"><input type="text" name="${section}[${rowCount}][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                <td class="p-2"><input type="number" min="1" value="1" name="${section}[${rowCount}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
-                <td class="p-2"><input type="text" name="${section}[${rowCount}][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                <td class="p-2"><input type="number" step="0.01" name="${section}[${rowCount}][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
-                <td class="p-2"><input type="number" step="0.01" name="${section}[${rowCount}][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="${section}" readonly></td>
-                <td class="p-2"><button type="button" onclick="removeRow(this, '${section}')" class="text-red-600 hover:text-red-800">✕</button></td>
+                <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="${rowCount + 1}" readonly></td>
+                <td class="p-1"><input type="text" name="${section}[${rowCount}][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="text" name="${section}[${rowCount}][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="number" min="1" value="1" name="${section}[${rowCount}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
+                <td class="p-1"><input type="text" name="${section}[${rowCount}][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="number" step="0.01" name="${section}[${rowCount}][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="${section}" onchange="calculateRowValue(this)"></td>
+                <td class="p-1"><input type="number" step="0.01" name="${section}[${rowCount}][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="${section}" readonly></td>
+                <td class="p-1"><button type="button" onclick="removeRow(this, '${section}')" class="text-red-600 hover:text-red-800">✕</button></td>
             `;
             
             table.appendChild(row);
@@ -545,31 +869,36 @@
                 </div>
                 <div id="${sectionId}-content" class="p-4 hidden">
                     <input type="hidden" id="${sectionId}-name-input" name="custom_sections[${customSectionCounter}][name]" value="${escapeHtml(sectionName.trim())}">
-                    <table class="w-full mb-4">
+                    <table class="w-full mb-4 text-xs">
                         <thead>
                             <tr class="bg-gray-100">
-                                <th class="p-2 text-left w-16">Nr</th>
-                                <th class="p-2 text-left">Nazwa</th>
-                                <th class="p-2 text-left w-20">Ilość</th>
-                                <th class="p-2 text-left">Dostawca</th>
-                                <th class="p-2 text-left w-32">Cena (zł)</th>
-                                <th class="p-2 text-left w-32">Wartość (zł)</th>
-                                <th class="p-2 w-16"></th>
+                                <th class="p-1 text-left w-10">Nr</th>
+                                <th class="p-1 text-left">Nazwa</th>
+                                <th class="p-1 text-left w-48">Typ</th>
+                                <th class="p-1 text-left w-16">Ilość</th>
+                                <th class="p-1 text-left">Dostawca</th>
+                                <th class="p-1 text-left w-24">Cena (zł)</th>
+                                <th class="p-1 text-left w-24">Wartość (zł)</th>
+                                <th class="p-1 w-10"></th>
                             </tr>
                         </thead>
                         <tbody id="${sectionId}-table">
                             <tr>
-                                <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="1" readonly></td>
-                                <td class="p-2"><input type="text" name="custom_sections[${customSectionCounter}][items][0][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                <td class="p-2"><input type="number" min="1" value="1" name="custom_sections[${customSectionCounter}][items][0][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
-                                <td class="p-2"><input type="text" name="custom_sections[${customSectionCounter}][items][0][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${customSectionCounter}][items][0][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
-                                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${customSectionCounter}][items][0][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="${sectionId}" readonly></td>
-                                <td class="p-2"></td>
+                                <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="1" readonly></td>
+                                <td class="p-1"><input type="text" name="custom_sections[${customSectionCounter}][items][0][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                <td class="p-1"><input type="text" name="custom_sections[${customSectionCounter}][items][0][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                <td class="p-1"><input type="number" min="1" value="1" name="custom_sections[${customSectionCounter}][items][0][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
+                                <td class="p-1"><input type="text" name="custom_sections[${customSectionCounter}][items][0][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                                <td class="p-1"><input type="number" step="0.01" name="custom_sections[${customSectionCounter}][items][0][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
+                                <td class="p-1"><input type="number" step="0.01" name="custom_sections[${customSectionCounter}][items][0][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="${sectionId}" readonly></td>
+                                <td class="p-1"></td>
                             </tr>
                         </tbody>
                     </table>
-                    <button type="button" onclick="addCustomRow('${sectionId}', ${customSectionCounter})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="addCustomRow('${sectionId}', ${customSectionCounter})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">+ Dodaj wiersz</button>
+                        <button type="button" onclick="openPartsCatalog('${sectionId}')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">📂 Wybierz z katalogu</button>
+                    </div>
                     <div class="mt-4 text-right">
                         <span class="font-semibold">Suma: </span>
                         <span id="${sectionId}-total" class="font-bold text-lg">0.00 zł</span>
@@ -641,13 +970,14 @@
             
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="p-2"><input type="number" class="w-full px-2 py-1 border rounded text-sm" value="${rowCount + 1}" readonly></td>
-                <td class="p-2"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][name]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                <td class="p-2"><input type="number" min="1" value="1" name="custom_sections[${sectionNumber}][items][${rowCount}][quantity]" class="w-full px-2 py-1 border rounded text-sm quantity-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
-                <td class="p-2"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][supplier]" class="w-full px-2 py-1 border rounded text-sm"></td>
-                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${sectionNumber}][items][${rowCount}][price]" class="w-full px-2 py-1 border rounded text-sm price-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
-                <td class="p-2"><input type="number" step="0.01" name="custom_sections[${sectionNumber}][items][${rowCount}][value]" class="w-full px-2 py-1 border rounded text-sm bg-gray-100 value-input" data-section="${sectionId}" readonly></td>
-                <td class="p-2"><button type="button" onclick="removeRow(this, '${sectionId}')" class="text-red-600 hover:text-red-800">✕</button></td>
+                <td class="p-1"><input type="number" class="w-full px-1 py-0.5 border rounded text-xs" value="${rowCount + 1}" readonly></td>
+                <td class="p-1"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][name]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][type]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="number" min="1" value="1" name="custom_sections[${sectionNumber}][items][${rowCount}][quantity]" class="w-full px-1 py-0.5 border rounded text-xs quantity-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
+                <td class="p-1"><input type="text" name="custom_sections[${sectionNumber}][items][${rowCount}][supplier]" class="w-full px-1 py-0.5 border rounded text-xs"></td>
+                <td class="p-1"><input type="number" step="0.01" name="custom_sections[${sectionNumber}][items][${rowCount}][price]" class="w-full px-1 py-0.5 border rounded text-xs price-input" data-section="${sectionId}" onchange="calculateRowValue(this)"></td>
+                <td class="p-1"><input type="number" step="0.01" name="custom_sections[${sectionNumber}][items][${rowCount}][value]" class="w-full px-1 py-0.5 border rounded text-xs bg-gray-100 value-input" data-section="${sectionId}" readonly></td>
+                <td class="p-1"><button type="button" onclick="removeRow(this, '${sectionId}')" class="text-red-600 hover:text-red-800">✕</button></td>
             `;
             
             table.appendChild(row);
@@ -659,6 +989,77 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Funkcje obsługi danych klienta
+        function fillCustomerData(companyId) {
+            if (!companyId) return;
+            
+            const select = document.getElementById('company-select');
+            const option = select.options[select.selectedIndex];
+            
+            document.getElementById('customer_name').value = option.dataset.name || '';
+            document.getElementById('customer_nip').value = option.dataset.nip || '';
+            document.getElementById('customer_address').value = option.dataset.address || '';
+            document.getElementById('customer_city').value = option.dataset.city || '';
+            document.getElementById('customer_postal_code').value = option.dataset.postal || '';
+            document.getElementById('customer_phone').value = option.dataset.phone || '';
+            document.getElementById('customer_email').value = option.dataset.email || '';
+        }
+        
+        function clearCustomerData() {
+            document.getElementById('company-select').value = '';
+            document.getElementById('customer_name').value = '';
+            document.getElementById('customer_nip').value = '';
+            document.getElementById('customer_address').value = '';
+            document.getElementById('customer_city').value = '';
+            document.getElementById('customer_postal_code').value = '';
+            document.getElementById('customer_phone').value = '';
+            document.getElementById('customer_email').value = '';
+        }
+        
+        async function fetchFromGUS() {
+            const nip = document.getElementById('customer_nip').value.replace(/[^0-9]/g, '');
+            
+            if (!nip || nip.length !== 10) {
+                alert('Podaj prawidłowy 10-cyfrowy NIP');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`https://wl-api.mf.gov.pl/api/search/nip/${nip}?date=${new Date().toISOString().split('T')[0]}`);
+                
+                if (!response.ok) {
+                    throw new Error('Nie znaleziono danych w GUS');
+                }
+                
+                const data = await response.json();
+                
+                if (data.result && data.result.subject) {
+                    const subject = data.result.subject;
+                    document.getElementById('customer_name').value = subject.name || '';
+                    document.getElementById('customer_nip').value = subject.nip || '';
+                    
+                    if (subject.workingAddress) {
+                        const addr = subject.workingAddress.split(',');
+                        if (addr.length >= 2) {
+                            document.getElementById('customer_address').value = addr[0].trim();
+                            const cityPostal = addr[1].trim().split(' ');
+                            if (cityPostal.length >= 2) {
+                                document.getElementById('customer_postal_code').value = cityPostal[0];
+                                document.getElementById('customer_city').value = cityPostal.slice(1).join(' ');
+                            }
+                        }
+                    }
+                    
+                    alert('Dane pobrane z GUS!');
+                } else {
+                    alert('Nie znaleziono firmy o podanym NIP');
+                }
+            } catch (error) {
+                console.error('Błąd pobierania danych z GUS:', error);
+                alert('Błąd podczas pobierania danych z GUS: ' + error.message);
+            }
         }
     </script>
 </body>
