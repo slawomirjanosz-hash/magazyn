@@ -63,6 +63,9 @@
                 <a href="{{ route('offers.new') }}" class="inline-block px-6 py-2 bg-green-600 text-white rounded text-base hover:bg-green-700 min-w-[180px]">Zrób nową Ofertę</a>
                 <a href="{{ route('offers.inprogress') }}" class="inline-block px-6 py-2 bg-yellow-600 text-white rounded text-base hover:bg-yellow-700 min-w-[180px]">Oferty w toku</a>
                 <a href="{{ route('offers.archived') }}" class="inline-block px-6 py-2 bg-gray-500 text-white rounded text-base hover:bg-gray-600 min-w-[180px]">Oferty zarchiwizowane</a>
+                @if(auth()->check() && (auth()->user()->email === 'proximalumine@gmail.com' || auth()->user()->can_settings))
+                    <a href="{{ route('offers.settings') }}" class="inline-block px-6 py-2 bg-purple-600 text-white rounded text-base hover:bg-purple-700 min-w-[180px]">⚙️ Ustawienia Ofert</a>
+                @endif
             </div>
         </div>
     </main>

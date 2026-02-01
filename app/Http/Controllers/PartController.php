@@ -1796,6 +1796,174 @@ class PartController extends Controller
         return redirect()->route('magazyn.settings')->with('success', 'Konfiguracja kodów QR została zapisana.');
     }
 
+    // ZAPISZ USTAWIENIA OFERT
+    public function saveOfferSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'element1_type' => 'nullable|string|max:50',
+            'element1_value' => 'nullable|string|max:255',
+            'separator1' => 'nullable|string|max:5',
+            'element2_type' => 'nullable|string|max:50',
+            'element2_value' => 'nullable|string|max:255',
+            'separator2' => 'nullable|string|max:5',
+            'element3_type' => 'nullable|string|max:50',
+            'element3_value' => 'nullable|string|max:255',
+            'separator3' => 'nullable|string|max:5',
+            'element4_type' => 'nullable|string|max:50',
+            'element4_value' => 'nullable|string|max:255',
+            'start_number' => 'nullable|integer|min:1',
+        ]);
+
+        // Usuń wszystkie poprzednie ustawienia i stwórz nowe (zawsze tylko 1 rekord)
+        \DB::table('offer_settings')->truncate();
+        \DB::table('offer_settings')->insert($validated);
+
+        return redirect()->route('offers.settings')->with('success', 'Konfiguracja ofert została zapisana.');
+    }
+
+    // UPLOAD SZABLONU OFERTÓWKI
+    public function uploadOfferTemplate(Request $request)
+    {
+        $request->validate([
+            'offer_template' => 'required|file|mimes:docx|max:10240', // max 10MB
+        ]);
+
+        $file = $request->file('offer_template');
+        $originalName = $file->getClientOriginalName();
+        $fileName = 'offer_template_' . time() . '.docx';
+
+        // Upewnij się, że katalog istnieje
+        $dir = storage_path('app/offer_templates');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        // Zapisz plik w storage/app/offer_templates
+        $path = $file->storeAs('offer_templates', $fileName);
+        
+        // Usuń stary szablon jeśli istnieje
+        $offerSettings = \DB::table('offer_settings')->first();
+        if ($offerSettings && $offerSettings->offer_template_path) {
+            \Storage::delete($offerSettings->offer_template_path);
+        }
+        
+        // Aktualizuj ustawienia
+        if ($offerSettings) {
+            \DB::table('offer_settings')->update([
+                'offer_template_path' => $path,
+                'offer_template_original_name' => $originalName,
+            ]);
+        } else {
+            \DB::table('offer_settings')->insert([
+                'offer_template_path' => $path,
+                'offer_template_original_name' => $originalName,
+            ]);
+        }
+        
+        return redirect()->route('offers.settings')->with('success', 'Szablon ofertówki został wgrany.');
+    }
+
+    // USUŃ SZABLON OFERTÓWKI
+    public function deleteOfferTemplate()
+    {
+        $offerSettings = \DB::table('offer_settings')->first();
+        
+        if ($offerSettings && $offerSettings->offer_template_path) {
+            \Storage::delete($offerSettings->offer_template_path);
+            
+            \DB::table('offer_settings')->update([
+                'offer_template_path' => null,
+                'offer_template_original_name' => null,
+            ]);
+        }
+        
+        return redirect()->route('offers.settings')->with('success', 'Szablon ofertówki został usunięty.');
+    }
+
+    // GENERUJ NUMER OFERTY NA PODSTAWIE USTAWIEŃ
+    public function generateOfferNumber($customerShortName = null)
+    {
+        $offerSettings = \DB::table('offer_settings')->first();
+        
+        if (!$offerSettings) {
+            // Domyślny format jeśli brak ustawień
+            return 'OFF_' . now()->format('Ymd') . '_' . str_pad(1, 4, '0', STR_PAD_LEFT);
+        }
+        
+        $parts = [];
+        
+        // Element 1
+        if (($offerSettings->element1_type ?? 'empty') !== 'empty') {
+            $parts[] = $this->generateOfferElement($offerSettings->element1_type, $offerSettings->element1_value ?? null, $offerSettings, $customerShortName);
+        }
+        
+        // Separator 1
+        if (!empty($parts) && ($offerSettings->element2_type ?? 'empty') !== 'empty') {
+            $parts[] = $offerSettings->separator1 ?? '_';
+        }
+        
+        // Element 2
+        if (($offerSettings->element2_type ?? 'empty') !== 'empty') {
+            $parts[] = $this->generateOfferElement($offerSettings->element2_type, $offerSettings->element2_value ?? null, $offerSettings, $customerShortName);
+        }
+        
+        // Separator 2
+        if (!empty($parts) && ($offerSettings->element3_type ?? 'empty') !== 'empty') {
+            $parts[] = $offerSettings->separator2 ?? '_';
+        }
+        
+        // Element 3
+        if (($offerSettings->element3_type ?? 'empty') !== 'empty') {
+            $parts[] = $this->generateOfferElement($offerSettings->element3_type, $offerSettings->element3_value ?? null, $offerSettings, $customerShortName);
+        }
+        
+        // Separator 3
+        if (!empty($parts) && ($offerSettings->element4_type ?? 'empty') !== 'empty') {
+            $parts[] = $offerSettings->separator3 ?? '_';
+        }
+        
+        // Element 4
+        if (($offerSettings->element4_type ?? 'empty') !== 'empty') {
+            $parts[] = $this->generateOfferElement($offerSettings->element4_type, $offerSettings->element4_value ?? null, $offerSettings, $customerShortName);
+        }
+        
+        $offerNumber = implode('', $parts);
+        
+        // Inkrementuj numer jeśli jakiś element to 'number'
+        $hasNumberElement = ($offerSettings->element1_type ?? '') === 'number' 
+            || ($offerSettings->element2_type ?? '') === 'number'
+            || ($offerSettings->element3_type ?? '') === 'number'
+            || ($offerSettings->element4_type ?? '') === 'number';
+            
+        if ($hasNumberElement) {
+            \DB::table('offer_settings')->update([
+                'start_number' => ($offerSettings->start_number ?? 1) + 1
+            ]);
+        }
+        
+        return $offerNumber;
+    }
+
+    // Generuj pojedynczy element numeru oferty
+    private function generateOfferElement($type, $value, $settings, $customerShortName = null)
+    {
+        switch ($type) {
+            case 'text':
+                return $value ?? 'TEXT';
+            case 'date':
+                return now()->format('Ymd');
+            case 'time':
+                return now()->format('Hi');
+            case 'number':
+                $number = $settings->start_number ?? 1;
+                return str_pad($number, 4, '0', STR_PAD_LEFT);
+            case 'customer':
+                return $customerShortName ?? 'KLIENT';
+            default:
+                return '';
+        }
+    }
+
     // UTWÓRZ ZAMÓWIENIE - ZAPISZ DO BAZY DANYCH
     public function createOrder(Request $request)
     {
@@ -3258,14 +3426,27 @@ class PartController extends Controller
         $works = $offer->works ?? [];
         $materials = $offer->materials ?? [];
 
-        // Tworzenie dokumentu Word
+        // Pobierz dane firmy z bazy danych
+        $companySettings = \App\Models\CompanySetting::first();
+        
+        // Sprawdź czy jest wgrany szablon
+        $offerSettings = \DB::table('offer_settings')->first();
+        if ($offerSettings && $offerSettings->offer_template_path) {
+            // Sprawdź czy plik szablonu faktycznie istnieje
+            $templateFullPath = storage_path('app/' . $offerSettings->offer_template_path);
+            if (file_exists($templateFullPath)) {
+                return $this->generateOfferWordFromTemplate($offer, $offerSettings->offer_template_path, $companySettings);
+            } else {
+                // Plik szablonu nie istnieje - wyczyść wpis w bazie i użyj domyślnej metody
+                \DB::table('offer_settings')->update(['offer_template_path' => null, 'offer_template_original_name' => null]);
+            }
+        }
+
+        // Tworzenie dokumentu Word (domyślna metoda)
         $phpWord = new \PhpOffice\PhpWord\PhpWord();
         
         // Dodaj sekcję
         $section = $phpWord->addSection();
-        
-        // Pobierz dane firmy z bazy danych
-        $companySettings = \App\Models\CompanySetting::first();
         
         // Tablica na pliki tymczasowe do usunięcia na końcu
         $tempFilesToDelete = [];
@@ -3477,6 +3658,39 @@ class PartController extends Controller
             $section->addTextBreak(1);
         }
         
+        // Dodaj sekcje niestandardowe (custom_sections)
+        if (!empty($offer->custom_sections) && is_array($offer->custom_sections)) {
+            foreach ($offer->custom_sections as $customSection) {
+                if (empty($customSection['items']) || !is_array($customSection['items'])) continue;
+                $section->addText($customSection['name'] ?? 'Sekcja', ['bold' => true, 'size' => 11], ['spaceAfter' => 100]);
+                $table = $section->addTable([
+                    'borderSize' => 6,
+                    'borderColor' => 'CCCCCC',
+                    'cellMargin' => 40,
+                    'alignment' => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+                ]);
+                $table->addRow();
+                $cellStyleHeader = ['bgColor' => 'E0E0E0', 'valign' => 'center'];
+                $table->addCell(4000, $cellStyleHeader)->addText('Nazwa', ['bold' => true, 'size' => 9]);
+                $table->addCell(1500, $cellStyleHeader)->addText('Ilość', ['bold' => true, 'size' => 9]);
+                $table->addCell(2000, $cellStyleHeader)->addText('Dostawca', ['bold' => true, 'size' => 9]);
+                $table->addCell(1500, $cellStyleHeader)->addText('Cena netto', ['bold' => true, 'size' => 9], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
+                $table->addCell(1500, $cellStyleHeader)->addText('Wartość', ['bold' => true, 'size' => 9], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
+                $rowIndex = 0;
+                foreach ($customSection['items'] as $item) {
+                    $rowIndex++;
+                    $table->addRow();
+                    $cellStyle = ($rowIndex % 2 === 0) ? ['bgColor' => 'F5F5F5', 'valign' => 'center'] : ['valign' => 'center'];
+                    $table->addCell(4000, $cellStyle)->addText($item['name'] ?? '', ['size' => 9]);
+                    $table->addCell(1500, $cellStyle)->addText((string)($item['quantity'] ?? ''), ['size' => 9]);
+                    $table->addCell(2000, $cellStyle)->addText($item['supplier'] ?? '', ['size' => 9]);
+                    $table->addCell(1500, $cellStyle)->addText(number_format($item['price'] ?? 0, 2, ',', ' ') . ' zł', ['size' => 9], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
+                    $table->addCell(1500, $cellStyle)->addText(number_format(($item['quantity'] ?? 1) * ($item['price'] ?? 0), 2, ',', ' ') . ' zł', ['size' => 9], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
+                }
+                $section->addTextBreak(1);
+            }
+        }
+
         // Suma końcowa
         $section->addTextBreak(1);
         $sumTable = $section->addTable([
@@ -3485,7 +3699,7 @@ class PartController extends Controller
         $sumTable->addRow();
         $sumTable->addCell(6000)->addText('');
         $sumTable->addCell(2000, ['bgColor' => 'E8E8E8', 'valign' => 'center'])->addText('SUMA: ' . number_format($offer->total_price, 2, ',', ' ') . ' zł', ['bold' => true, 'size' => 10], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
-        
+
         // Informacja kontaktowa
         $section->addTextBreak(3);
         $section->addText(
@@ -3493,7 +3707,7 @@ class PartController extends Controller
             ['size' => 9, 'italic' => true],
             ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::LEFT]
         );
-        
+
         $section->addTextBreak(1);
         $section->addText('Pozdrawiam,', ['size' => 11], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
         if ($companySettings && $companySettings->email) {
@@ -3502,25 +3716,86 @@ class PartController extends Controller
         if ($companySettings && $companySettings->phone) {
             $section->addText('nr. tel.: ' . $companySettings->phone, ['size' => 10], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
         }
-        
+
         // Nazwa pliku: numer oferty + opis
         $fileName = $offerNumber;
         if (!empty($offerTitle)) {
             $fileName .= '_' . $offerTitle;
         }
         $fileName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $fileName) . '.docx';
-        
+
         // Zapisz do tymczasowego pliku
         $tempFile = tempnam(sys_get_temp_dir(), 'offer_');
         $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save($tempFile);
-        
+
         // Usuń pliki tymczasowe logo
         foreach ($tempFilesToDelete as $tempFilePath) {
             @unlink($tempFilePath);
         }
-        
+
         // Zwróć plik do pobrania
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+    }
+
+    // GENERUJ DOKUMENT WORD DLA OFERTY NA PODSTAWIE SZABLONU
+    protected function generateOfferWordFromTemplate($offer, $templatePath, $companySettings)
+    {
+        $offerNumber = $offer->offer_number;
+        $offerTitle = $offer->offer_title ?? '';
+
+        // Przygotuj dane do zamiany
+        $replacements = [
+            '{{OFFER_NUMBER}}' => $offerNumber,
+            '{{OFFER_TITLE}}' => $offerTitle,
+            '{{OFFER_DATE}}' => $offer->offer_date ? $offer->offer_date->format('d.m.Y') : date('d.m.Y'),
+            '{{OFFER_DESCRIPTION}}' => strip_tags($offer->offer_description ?? ''),
+            '{{TOTAL_PRICE}}' => number_format($offer->total_price ?? 0, 2, ',', ' ') . ' zł',
+            '{{COMPANY_NAME}}' => $companySettings->name ?? 'Moja Firma',
+            '{{COMPANY_ADDRESS}}' => ($companySettings->address ?? '') . ', ' . ($companySettings->postal_code ?? '') . ' ' . ($companySettings->city ?? ''),
+            '{{COMPANY_EMAIL}}' => $companySettings->email ?? '',
+            '{{COMPANY_PHONE}}' => $companySettings->phone ?? '',
+            '{{CUSTOMER_NAME}}' => $offer->customer_name ?? '',
+            '{{CUSTOMER_ADDRESS}}' => ($offer->customer_address ?? '') . ', ' . ($offer->customer_postal_code ?? '') . ' ' . ($offer->customer_city ?? ''),
+            '{{CUSTOMER_EMAIL}}' => $offer->customer_email ?? '',
+            '{{CUSTOMER_PHONE}}' => $offer->customer_phone ?? '',
+            '{{CUSTOMER_NIP}}' => $offer->customer_nip ?? '',
+        ];
+
+        // Wczytaj szablon
+        $templateFullPath = storage_path('app/' . $templatePath);
+        if (!file_exists($templateFullPath)) {
+            return back()->with('error', 'Szablon ofertówki nie istnieje na serwerze. Wgraj plik ponownie w ustawieniach ofert.')->withInput();
+        }
+
+        // Użyj TemplateProcessor do zamiany znaczników
+        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templateFullPath);
+
+        // Zamień znaczniki
+        foreach ($replacements as $search => $replace) {
+            // TemplateProcessor używa ${VAR} lub ${VAR} formatu, ale możemy też użyć setValue
+            $searchClean = str_replace(['{{', '}}'], ['${', '}'], $search);
+            $templateProcessor->setValue(trim($searchClean, '${}'), $replace);
+
+            // Próbuj też z oryginalnym formatem {{VAR}}
+            try {
+                $templateProcessor->setValue(trim($search, '{}'), $replace);
+            } catch (\Exception $e) {
+                // Ignoruj błędy
+            }
+        }
+
+        // Nazwa pliku
+        $fileName = $offerNumber;
+        if (!empty($offerTitle)) {
+            $fileName .= '_' . $offerTitle;
+        }
+        $fileName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $fileName) . '.docx';
+
+        // Zapisz do pliku tymczasowego
+        $tempFile = tempnam(sys_get_temp_dir(), 'offer_template_') . '.docx';
+        $templateProcessor->saveAs($tempFile);
+
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 
@@ -3531,7 +3806,7 @@ class PartController extends Controller
         $userId = auth()->id();
         
         // Companies are visible to all users
-        $companies = \App\Models\CrmCompany::with('owner', 'addedBy')->orderBy('name')->get();
+        $companies = \App\Models\CrmCompany::with('owner', 'addedBy', 'supplier')->orderBy('name')->get();
         
         // Deals: show only deals owned by user OR assigned to user
         $deals = \App\Models\CrmDeal::with(['company', 'owner', 'user', 'assignedUsers'])
@@ -3958,7 +4233,7 @@ class PartController extends Controller
 
     public function getDeal($id)
     {
-        $deal = \App\Models\CrmDeal::with('assignedUsers')->findOrFail($id);
+        $deal = \App\Models\CrmDeal::with(['assignedUsers', 'offers'])->findOrFail($id);
         return response()->json($deal);
     }
 

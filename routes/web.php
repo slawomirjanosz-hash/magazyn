@@ -352,6 +352,10 @@ Route::middleware(['auth'])->prefix('receptury')->group(function () {
     Route::put('/{recipe}', [App\Http\Controllers\RecipeController::class, 'update'])->name('recipes.update');
     Route::delete('/{recipe}', [App\Http\Controllers\RecipeController::class, 'destroy'])->name('recipes.destroy');
     
+    // Skalowanie receptury
+    Route::get('/{recipe}/skaluj', [App\Http\Controllers\RecipeController::class, 'scale'])->name('recipes.scale');
+    Route::post('/{recipe}/skaluj', [App\Http\Controllers\RecipeController::class, 'processScale'])->name('recipes.processScale');
+    
     // Realizacja receptury
     Route::post('/{recipe}/rozpocznij', [App\Http\Controllers\RecipeController::class, 'startExecution'])->name('recipes.start');
     Route::get('/realizacja/{execution}', [App\Http\Controllers\RecipeController::class, 'execute'])->name('recipes.execute');

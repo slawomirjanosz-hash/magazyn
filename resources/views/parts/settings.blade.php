@@ -1574,6 +1574,34 @@
             });
         });
         
+        // Obsługa hashowania w URL (np. #offer-settings)
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1); // Usuń #
+            const element = document.getElementById(hash);
+            if (element) {
+                // Znajdź przycisk rozwijający dla tej sekcji
+                const parentSection = element.closest('.border.rounded');
+                if (parentSection) {
+                    const btn = parentSection.querySelector('.collapsible-btn');
+                    if (btn) {
+                        btn.click(); // Rozwiń sekcję
+                        // Jeśli to podsekcja w "Inne Ustawienia", rozwiń też parent
+                        const otherSettings = document.getElementById('other-settings-content');
+                        if (otherSettings && otherSettings.contains(element)) {
+                            const parentBtn = document.querySelector('[data-target="other-settings-content"]');
+                            if (parentBtn && otherSettings.classList.contains('hidden')) {
+                                parentBtn.click();
+                            }
+                        }
+                    }
+                    // Przewiń do elementu
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            }
+        }
+        
         // Przycisk pobierania danych dostawcy po NIP
         const fetchNipBtn = document.getElementById('fetch-nip-btn');
         const nipInput = document.getElementById('nip-input');

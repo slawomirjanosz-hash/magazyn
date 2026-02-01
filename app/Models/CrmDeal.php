@@ -50,6 +50,11 @@ class CrmDeal extends Model
         return $this->hasMany(CrmActivity::class, 'deal_id');
     }
 
+    public function offers()
+    {
+        return $this->hasMany(Offer::class, 'crm_deal_id');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

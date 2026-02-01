@@ -58,6 +58,7 @@
                                 <th class="p-4 text-left">Nr oferty</th>
                                 <th class="p-4 text-left">Nazwa</th>
                                 <th class="p-4 text-left">Data</th>
+                                <th class="p-4 text-left">Szansa CRM</th>
                                 <th class="p-4 text-right">Cena końcowa</th>
                                 <th class="p-4 text-center">Akcja</th>
                             </tr>
@@ -68,6 +69,18 @@
                                 <td class="p-4">{{ $offer->offer_number }}</td>
                                 <td class="p-4">{{ $offer->offer_title }}</td>
                                 <td class="p-4">{{ $offer->offer_date->format('Y-m-d') }}</td>
+                                <td class="p-4">
+                                    @if($offer->crmDeal)
+                                        <div class="text-sm">
+                                            <div class="font-semibold text-blue-600">{{ $offer->crmDeal->name }}</div>
+                                            @if($offer->crmDeal->company)
+                                                <div class="text-gray-600">{{ $offer->crmDeal->company->name }}</div>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
                                 <td class="p-4 text-right font-semibold">{{ number_format($offer->total_price, 2, ',', ' ') }} zł</td>
                                 <td class="p-4 text-center">
                                     <div class="flex gap-2 justify-center">

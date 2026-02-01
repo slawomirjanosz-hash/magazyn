@@ -81,13 +81,17 @@
                     <a href="{{ route('recipes.edit', $recipe) }}" class="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                         ✏️ Edytuj
                     </a>
-                    <form action="{{ route('recipes.start', $recipe) }}" method="POST" class="flex-1">
-                        @csrf
-                        <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                            ▶️ Rozpocznij
-                        </button>
-                    </form>
+                    <a href="{{ route('recipes.scale', $recipe) }}" class="flex-1 text-center px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                        ⚖️ Skaluj
+                    </a>
                 </div>
+                
+                <form action="{{ route('recipes.start', $recipe) }}" method="POST" class="mt-2">
+                    @csrf
+                    <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        ▶️ Rozpocznij
+                    </button>
+                </form>
                 
                 <form action="{{ route('recipes.destroy', $recipe) }}" method="POST" class="mt-2" onsubmit="return confirm('Czy na pewno usunąć tę recepturę?')">
                     @csrf

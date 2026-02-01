@@ -85,31 +85,56 @@ class RecipeController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'output_quantity' => 'required|integer|min:1',
-            'steps' => 'required|array|min:1',
-            'steps.*.type' => 'required|in:action,ingredient',
+            'flour' => 'required|array|min:1',
+            'flour.*.ingredient_id' => 'required|exists:ingredients,id',
+            'flour.*.weight' => 'required|numeric|min:0.01',
+            'flour.*.percentage' => 'required|numeric|min:0.01|max:100',
         ]);
 
         DB::beginTransaction();
         try {
+            // Sprawdź czy suma procentów mąki = 100%
+            $flourPercentageSum = collect($request->flour)->sum('percentage');
+            if (abs($flourPercentageSum - 100) > 0.01) {
+                return back()->with('error', 'Suma procentów mąki musi wynosić 100%!');
+            }
+            
             $recipe = Recipe::create([
                 'name' => $request->name,
                 'description' => $request->description,
                 'output_quantity' => $request->output_quantity,
-                'total_steps' => count($request->steps),
-                'estimated_time' => $this->calculateEstimatedTime($request->steps)
+                'total_steps' => 0,
+                'estimated_time' => 0
             ]);
 
-            foreach ($request->steps as $index => $step) {
+            $order = 1;
+            
+            // Dodaj mąkę
+            foreach ($request->flour as $flour) {
                 RecipeStep::create([
                     'recipe_id' => $recipe->id,
-                    'order' => $index + 1,
-                    'type' => $step['type'],
-                    'action_name' => $step['action_name'] ?? null,
-                    'action_description' => $step['action_description'] ?? null,
-                    'duration' => $step['duration'] ?? null,
-                    'ingredient_id' => $step['ingredient_id'] ?? null,
-                    'quantity' => $step['quantity'] ?? null,
+                    'order' => $order++,
+                    'type' => 'ingredient',
+                    'ingredient_id' => $flour['ingredient_id'],
+                    'quantity' => $flour['weight'],
+                    'percentage' => $flour['percentage'],
+                    'is_flour' => true,
                 ]);
+            }
+            
+            // Dodaj pozostałe składniki
+            if ($request->has('ingredient')) {
+                foreach ($request->ingredient as $ingredient) {
+                    RecipeStep::create([
+                        'recipe_id' => $recipe->id,
+                        'order' => $order++,
+                        'type' => 'ingredient',
+                        'ingredient_id' => $ingredient['ingredient_id'],
+                        'quantity' => $ingredient['quantity'],
+                        'percentage' => $ingredient['percentage'],
+                        'is_flour' => false,
+                    ]);
+                }
             }
 
             DB::commit();
@@ -178,6 +203,42 @@ class RecipeController extends Controller
         $this->checkRecipeAccess();
         $recipe->delete();
         return redirect()->route('recipes.index')->with('success', 'Receptura została usunięta!');
+    }
+
+    // SKALOWANIE RECEPTURY
+    public function scale(Recipe $recipe)
+    {
+        $this->checkRecipeAccess();
+        $recipe->load('steps.ingredient');
+        return view('recipes.scale', compact('recipe'));
+    }
+
+    public function processScale(Request $request, Recipe $recipe)
+    {
+        $this->checkRecipeAccess();
+        $request->validate([
+            'desired_quantity' => 'required|integer|min:1',
+        ]);
+
+        $recipe->load('steps.ingredient');
+        
+        // Oblicz współczynnik skalowania
+        $scaleFactor = $request->desired_quantity / $recipe->output_quantity;
+        
+        // Przeskaluj wszystkie składniki
+        $scaledSteps = $recipe->steps->map(function($step) use ($scaleFactor) {
+            $scaledStep = $step->toArray();
+            $scaledStep['scaled_quantity'] = $step->quantity * $scaleFactor;
+            $scaledStep['ingredient'] = $step->ingredient;
+            return (object)$scaledStep;
+        });
+        
+        return view('recipes.scale', [
+            'recipe' => $recipe,
+            'scaledSteps' => $scaledSteps,
+            'desiredQuantity' => $request->desired_quantity,
+            'scaleFactor' => $scaleFactor
+        ]);
     }
 
     // ROZPOCZĘCIE REALIZACJI
