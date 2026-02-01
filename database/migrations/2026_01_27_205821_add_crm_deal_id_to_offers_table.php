@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('offers', function (Blueprint $table) {
-            //
-        });
+        // Duplikat migracji - nie wykonuj żadnych zmian
     }
 
     /**
