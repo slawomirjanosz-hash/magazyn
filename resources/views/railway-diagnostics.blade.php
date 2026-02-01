@@ -175,6 +175,60 @@ Debug Mode: {{ config('app.debug') ? 'ON' : 'OFF' }}</pre>
         }
     @endphp
     
+    <h2>Test /wyceny/nowa Route</h2>
+    @php
+        echo '<div>Testing route loading...</div>';
+        try {
+            // Test if view file exists
+            if (view()->exists('offers-new')) {
+                echo '<div class="ok">✓ View file exists: offers-new.blade.php</div>';
+            } else {
+                echo '<div class="error">✗ View file missing: offers-new.blade.php</div>';
+            }
+            
+            // Test route registration
+            $routes = Route::getRoutes();
+            $found = false;
+            foreach ($routes as $route) {
+                if ($route->getName() === 'offers.new') {
+                    $found = true;
+                    echo '<div class="ok">✓ Route registered: offers.new</div>';
+                    echo '<div>URI: ' . $route->uri() . '</div>';
+                    echo '<div>Method: ' . implode('|', $route->methods()) . '</div>';
+                    break;
+                }
+            }
+            if (!$found) {
+                echo '<div class="error">✗ Route not registered: offers.new</div>';
+            }
+            
+            // Try to actually render the view
+            echo '<div>Attempting to render view...</div>';
+            try {
+                $dealId = null;
+                $deal = null;
+                $companies = [];
+                
+                if (class_exists('\App\Models\CrmCompany')) {
+                    $companies = \App\Models\CrmCompany::with('supplier')->orderBy('name')->get();
+                }
+                
+                $viewContent = view('offers-new', ['deal' => $deal, 'companies' => $companies])->render();
+                echo '<div class="ok">✓ View renders successfully!</div>';
+                echo '<div>View size: ' . strlen($viewContent) . ' bytes</div>';
+            } catch (\Exception $e) {
+                echo '<div class="error">✗ View render failed!</div>';
+                echo '<div class="error">Error: ' . $e->getMessage() . '</div>';
+                echo '<div class="error">File: ' . $e->getFile() . '</div>';
+                echo '<div class="error">Line: ' . $e->getLine() . '</div>';
+                echo '<pre class="error">' . $e->getTraceAsString() . '</pre>';
+            }
+            
+        } catch (\Exception $e) {
+            echo '<div class="error">✗ Route test failed: ' . $e->getMessage() . '</div>';
+        }
+    @endphp
+    
     <hr>
     <p><a href="/wyceny/nowa" style="color: #0f0;">Try /wyceny/nowa again</a></p>
 </body>
