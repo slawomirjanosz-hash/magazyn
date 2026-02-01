@@ -82,7 +82,13 @@
                             <div class="text-red-600 text-sm mb-1">{{ $errors->first('offer_number') }}</div>
                         @endif
                         @php
-                            $offerSettings = \DB::table('offer_settings')->first();
+                            $offerSettings = null;
+                            try {
+                                $offerSettings = \DB::table('offer_settings')->first();
+                            } catch (\Exception $e) {
+                                // Table doesn't exist yet
+                            }
+                            
                             $previewNumber = 'OFF_' . date('Ymd') . '_0001';
                             $element4Customer = '';
                             $element4Enabled = false;
