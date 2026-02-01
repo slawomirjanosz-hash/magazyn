@@ -1,12 +1,46 @@
 <?php
 // PODSTRONY WYCEN I OFERT
 Route::middleware('auth')->get('/wyceny/portfolio', function () {
-    $offers = \App\Models\Offer::where('status', 'portfolio')->orderBy('created_at', 'desc')->get();
+    try {
+        if (class_exists('\App\Models\CrmDeal')) {
+            $offers = \App\Models\Offer::with('crmDeal.company')->where('status', 'portfolio')->orderBy('created_at', 'desc')->get();
+        } else {
+            $offers = \App\Models\Offer::where('status', 'portfolio')->orderBy('created_at', 'desc')->get();
+        }
+    } catch (\Exception $e) {
+        $offers = \App\Models\Offer::where('status', 'portfolio')->orderBy('created_at', 'desc')->get();
+    }
     return view('offers-portfolio', compact('offers'));
 })->name('offers.portfolio');
-Route::middleware('auth')->get('/wyceny/nowa', function () {
-    return view('offers-new');
+Route::middleware('auth')->get('/wyceny/nowa', function (Illuminate\Http\Request $request) {
+    $dealId = $request->input('deal_id');
+    $deal = null;
+    
+    try {
+        if ($dealId && class_exists('\App\Models\CrmDeal')) {
+            $deal = \App\Models\CrmDeal::with(['company.supplier'])->find($dealId);
+        }
+    } catch (\Exception $e) {
+        // CRM tables might not exist yet
+        \Log::warning('CRM deal not found or tables not migrated: ' . $e->getMessage());
+    }
+    
+    $companies = [];
+    try {
+        if (class_exists('\App\Models\CrmCompany')) {
+            $companies = \App\Models\CrmCompany::with('supplier')->orderBy('name')->get();
+        }
+    } catch (\Exception $e) {
+        // CRM tables might not exist yet
+        \Log::warning('CRM companies not found or tables not migrated: ' . $e->getMessage());
+    }
+    
+    return view('offers-new', ['deal' => $deal, 'companies' => $companies]);
 })->name('offers.new');
+
+Route::middleware('auth')->get('/wyceny/ustawienia', function () {
+    return view('offers-settings');
+})->name('offers.settings');
 
 // API endpoint do wyszukiwania części
 Route::middleware('auth')->get('/api/parts/search', function (Illuminate\Http\Request $request) {
@@ -33,6 +67,17 @@ Route::middleware('auth')->get('/api/parts/catalog', function () {
     return response()->json($parts);
 })->name('api.parts.catalog');
 Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Request $request) {
+    // Pobierz numer oferty z formularza
+    $offerNumber = $request->input('offer_number');
+    
+    // Sprawdź czy taki numer już istnieje
+    $existingOffer = \App\Models\Offer::where('offer_number', $offerNumber)->first();
+    if ($existingOffer) {
+        return redirect()->back()
+            ->withInput()
+            ->withErrors(['offer_number' => 'Oferta o numerze "' . $offerNumber . '" już istnieje. Zmień numer oferty.']);
+    }
+    
     // Oblicz całkowitą cenę
     $totalPrice = 0;
     
@@ -78,7 +123,7 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
     
     // Zapisz ofertę
     \App\Models\Offer::create([
-        'offer_number' => $request->input('offer_number'),
+        'offer_number' => $offerNumber,
         'offer_title' => $request->input('offer_title'),
         'offer_date' => $request->input('offer_date'),
         'offer_description' => $request->input('offer_description'),
@@ -87,7 +132,15 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
         'materials' => $materials,
         'custom_sections' => $customSections,
         'total_price' => $totalPrice,
-        'status' => $request->input('destination')
+        'status' => $request->input('destination'),
+        'crm_deal_id' => $request->input('crm_deal_id'),
+        'customer_name' => $request->input('customer_name'),
+        'customer_nip' => $request->input('customer_nip'),
+        'customer_address' => $request->input('customer_address'),
+        'customer_city' => $request->input('customer_city'),
+        'customer_postal_code' => $request->input('customer_postal_code'),
+        'customer_phone' => $request->input('customer_phone'),
+        'customer_email' => $request->input('customer_email')
     ]);
     
     $destination = $request->input('destination');
@@ -96,11 +149,27 @@ Route::middleware('auth')->post('/wyceny/nowa', function (Illuminate\Http\Reques
     return redirect()->route($routeName)->with('success', 'Oferta została zapisana pomyślnie!');
 })->name('offers.store');
 Route::middleware('auth')->get('/wyceny/w-toku', function () {
-    $offers = \App\Models\Offer::where('status', 'inprogress')->orderBy('created_at', 'desc')->get();
+    try {
+        if (class_exists('\App\Models\CrmDeal')) {
+            $offers = \App\Models\Offer::with('crmDeal.company')->where('status', 'inprogress')->orderBy('created_at', 'desc')->get();
+        } else {
+            $offers = \App\Models\Offer::where('status', 'inprogress')->orderBy('created_at', 'desc')->get();
+        }
+    } catch (\Exception $e) {
+        $offers = \App\Models\Offer::where('status', 'inprogress')->orderBy('created_at', 'desc')->get();
+    }
     return view('offers-inprogress', compact('offers'));
 })->name('offers.inprogress');
 Route::middleware('auth')->get('/wyceny/zarchiwizowane', function () {
-    $offers = \App\Models\Offer::where('status', 'archived')->orderBy('created_at', 'desc')->get();
+    try {
+        if (class_exists('\App\Models\CrmDeal')) {
+            $offers = \App\Models\Offer::with('crmDeal.company')->where('status', 'archived')->orderBy('created_at', 'desc')->get();
+        } else {
+            $offers = \App\Models\Offer::where('status', 'archived')->orderBy('created_at', 'desc')->get();
+        }
+    } catch (\Exception $e) {
+        $offers = \App\Models\Offer::where('status', 'archived')->orderBy('created_at', 'desc')->get();
+    }
     return view('offers-archived', compact('offers'));
 })->name('offers.archived');
 
@@ -130,6 +199,7 @@ Route::middleware('auth')->post('/wyceny/{offer}/convert-to-project', function (
 
 Route::middleware('auth')->post('/wyceny/{offer}/copy', function (\App\Models\Offer $offer) {
     $newOffer = $offer->replicate();
+    $newOffer->offer_number = app(\App\Http\Controllers\PartController::class)->generateOfferNumber();
     $newOffer->offer_title = $offer->offer_title . '_kopia';
     $newOffer->offer_date = now();
     $newOffer->save();
@@ -138,7 +208,26 @@ Route::middleware('auth')->post('/wyceny/{offer}/copy', function (\App\Models\Of
 })->name('offers.copy');
 
 Route::middleware('auth')->get('/wyceny/{offer}/edit', function (\App\Models\Offer $offer) {
-    return view('offers-edit', compact('offer'));
+    try {
+        if (class_exists('\App\Models\CrmDeal')) {
+            $offer->load('crmDeal.company');
+        }
+    } catch (\Exception $e) {
+        // CRM tables might not exist yet
+        \Log::warning('CRM deal relation not loaded: ' . $e->getMessage());
+    }
+    
+    $companies = [];
+    try {
+        if (class_exists('\App\Models\CrmCompany')) {
+            $companies = \App\Models\CrmCompany::orderBy('name')->get();
+        }
+    } catch (\Exception $e) {
+        // CRM tables might not exist yet
+        \Log::warning('CRM companies not found: ' . $e->getMessage());
+    }
+    
+    return view('offers-edit', compact('offer', 'companies'));
 })->name('offers.edit');
 
 Route::middleware('auth')->put('/wyceny/{offer}', function (Illuminate\Http\Request $request, \App\Models\Offer $offer) {
@@ -196,7 +285,15 @@ Route::middleware('auth')->put('/wyceny/{offer}', function (Illuminate\Http\Requ
         'materials' => $materials,
         'custom_sections' => $customSections,
         'total_price' => $totalPrice,
-        'status' => $request->input('destination')
+        'status' => $request->input('destination'),
+        'crm_deal_id' => $request->input('crm_deal_id'),
+        'customer_name' => $request->input('customer_name'),
+        'customer_nip' => $request->input('customer_nip'),
+        'customer_address' => $request->input('customer_address'),
+        'customer_city' => $request->input('customer_city'),
+        'customer_postal_code' => $request->input('customer_postal_code'),
+        'customer_phone' => $request->input('customer_phone'),
+        'customer_email' => $request->input('customer_email')
     ]);
     
     $destination = $request->input('destination');
@@ -301,6 +398,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/magazyn/ustawienia/company', [PartController::class, 'saveCompanySettings'])->name('magazyn.company.save')->middleware('permission:settings');
     Route::post('/magazyn/ustawienia/order-settings', [PartController::class, 'saveOrderSettings'])->name('magazyn.order-settings.save')->middleware('permission:settings');
     Route::post('/magazyn/ustawienia/qr-settings', [PartController::class, 'saveQrSettings'])->name('magazyn.qr-settings.save')->middleware('permission:settings');
+    Route::post('/wyceny/ustawienia', [PartController::class, 'saveOfferSettings'])->name('offers.settings.save')->middleware('permission:settings');
+    Route::post('/wyceny/ustawienia/upload-template', [PartController::class, 'uploadOfferTemplate'])->name('offers.settings.upload-template')->middleware('permission:settings');
+    Route::delete('/wyceny/ustawienia/delete-template', [PartController::class, 'deleteOfferTemplate'])->name('offers.settings.delete-template')->middleware('permission:settings');
     Route::post('/parts/generate-qr', [PartController::class, 'generateQrCode'])->name('parts.generateQr')->middleware('permission:add');
     Route::post('/parts/find-by-qr', [PartController::class, 'findByQr'])->name('parts.findByQr')->middleware('permission:add');
     Route::post('/parts/import-excel', [PartController::class, 'importExcel'])->name('parts.importExcel')->middleware('permission:add');
